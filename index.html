@@ -355,45 +355,47 @@
   <div class="modal" style="max-width:600px">
     <div class="modal-head">
       <div class="avatar" style="background:var(--brand2)">🔍</div>
-      <h2>인플루언서 · 유튜버 검색</h2>
+      <h2>실제 인플루언서 검색 · 등록</h2>
     </div>
     <div class="modal-body">
-      <div class="section-t">➕ 빠른 추가 <span class="keyhint">· 찾은 인플루언서를 바로 목록에 추가</span></div>
+      <!-- 유튜브 실시간 검색 연결 상태 -->
+      <div id="ytKeyRow">
+        <div class="section-t">▶️ 유튜브 실시간 검색 연결 <span class="keyhint" id="ytKeyState"></span></div>
+        <div class="searchbar-lg" id="ytKeyInputRow">
+          <input id="ytKey" style="flex:1;padding:10px 12px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);font-size:13.5px" placeholder="YouTube Data API v3 키 붙여넣기">
+          <button class="btn primary" id="ytKeySave">연결</button>
+        </div>
+        <div class="keyhint" id="ytKeyHelp">🔑 무료 발급: Google Cloud Console → 'YouTube Data API v3' 사용 설정 → 사용자 인증 정보 → API 키. 키는 이 브라우저에만 저장돼요.</div>
+      </div>
+
+      <div class="section-t">🔎 실시간 검색 <span class="keyhint">· 키워드나 카테고리로 실제 채널을 바로 찾아 등록</span></div>
+      <div class="searchbar-lg">
+        <input id="sq" placeholder="키워드·채널명·핸들 (예: 캠핑, 비건 화장품, 홈트)">
+        <button class="btn primary" id="ytSearchBtn">검색</button>
+      </div>
+      <div class="plat-links" id="catQuick" style="margin-top:8px"></div>
+
+      <div class="section-t">✨ 검색 결과 · 추천 <span class="keyhint" id="recoInfo"></span></div>
+      <div id="recoBox" style="display:flex;flex-direction:column;gap:9px"></div>
+      <div id="ytResults" style="display:none"></div>
+
+      <div class="section-t">📷 인스타그램 · 틱톡 등록 <span class="keyhint">· 실시간 검색 불가 → 링크로 등록(계정 확인)</span></div>
       <div class="qa-row">
         <div class="qa-preview" id="qaPreview">?</div>
-        <input id="qa_input" style="flex:1;padding:11px 13px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);font-size:14px" placeholder="이름 또는 프로필 링크 붙여넣기 (예: @handle · youtube.com/@... · instagram.com/...)">
+        <input id="qa_input" style="flex:1;padding:11px 13px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);font-size:14px" placeholder="실제 프로필 링크·@핸들 붙여넣기 (instagram.com/... · tiktok.com/@...)">
       </div>
       <div class="grid3">
         <div class="field"><label>이름/활동명</label><input id="qa_name" placeholder="자동 인식"></div>
         <div class="field"><label>플랫폼</label><select id="qa_platform"></select></div>
         <div class="field"><label>카테고리</label><select id="qa_category"></select></div>
       </div>
-      <button class="btn primary" id="qaAdd" style="width:100%">＋ 섭외 목록에 추가</button>
-
-      <div class="section-t">🔎 키워드 검색 <span class="keyhint">· 아래 추천·외부 검색에 함께 적용</span></div>
-      <div class="searchbar-lg">
-        <input id="sq" placeholder="키워드·핸들·채널명 (예: 캠핑, 비건 화장품, 홈트)">
-      </div>
-      <div class="section-t" style="margin-top:2px">⚡ 카테고리 선택</div>
-      <div class="plat-links" id="catQuick"></div>
-
-      <div class="section-t">✨ 추천 후보 <span class="keyhint" id="recoInfo"></span></div>
-      <div id="recoBox" style="display:flex;flex-direction:column;gap:9px"></div>
-
-      <div class="section-t">🌐 SNS·플랫폼에서 바로 검색</div>
+      <button class="btn primary" id="qaAdd" style="width:100%">계정 확인 후 추가</button>
+      <div class="section-t" style="margin-top:4px">🌐 플랫폼에서 계정 찾기 <span class="keyhint">· 새 탭에서 검색 후 링크 복사</span></div>
       <div class="plat-links" id="platLinks"></div>
-      <div class="section-t">📇 인플루언서 DB · 랭킹 사이트</div>
-      <div class="plat-links" id="dbLinks"></div>
-      <div class="section-t">▶️ 유튜브 실시간 검색 <span class="keyhint">· API 키 입력 시 앱 안에서 바로 검색·추가</span></div>
-      <div class="field"><input id="ytKey" placeholder="YouTube Data API v3 키 (이 브라우저에만 저장돼요)"></div>
-      <div class="searchbar-lg">
-        <button class="btn primary" id="ytSearchBtn" style="flex:1">▶️ 유튜브 채널 검색</button>
-      </div>
-      <div id="ytResults" style="display:flex;flex-direction:column;gap:9px"></div>
-      <div class="keyhint" id="ytKeyHelp">🔑 API 키는 Google Cloud Console → YouTube Data API v3 에서 무료로 발급받을 수 있어요. 키가 없어도 위의 플랫폼 검색은 그대로 사용할 수 있습니다.</div>
+      <div class="plat-links" id="dbLinks" style="margin-top:6px"></div>
     </div>
     <div class="modal-foot">
-      <div class="keyhint">플랫폼·DB 검색은 새 탭에서 열립니다.</div>
+      <div class="keyhint">이름만으로는 등록되지 않아요 — 실제 계정만 등록됩니다.</div>
       <div class="spacer"></div>
       <button class="btn" id="searchClose">닫기</button>
     </div>
@@ -802,14 +804,12 @@ function renderBoard(){
     const e=el('div','empty'); e.style.width='100%';
     e.innerHTML=`<div class="big">🔎</div>
       <div style="font-size:16px;font-weight:700;color:var(--txt);margin-bottom:6px">아직 섭외 목록이 비어 있어요</div>
-      <div style="margin-bottom:18px">인플루언서를 <b style="color:var(--txt)">검색·추천</b>으로 찾아 추가하거나 직접 입력해 보세요.</div>
+      <div style="margin-bottom:18px"><b style="color:var(--txt)">실시간 검색·추천</b>으로 실제 유튜버·SNS 계정을 찾아 등록하세요.</div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <button class="btn primary" id="emptySearch">🔎 검색 · ✨ 추천 보기</button>
-        <button class="btn" id="emptyAdd">＋ 직접 추가</button>
+        <button class="btn primary" id="emptySearch">🔎 인플루언서 검색 · 추천</button>
       </div>`;
     board.appendChild(e);
     $('#emptySearch').onclick=openSearch;
-    $('#emptyAdd').onclick=()=>openEdit(null);
     return;
   }
   STATUSES.forEach(s=>{
@@ -1123,69 +1123,122 @@ function renderCatQuick(){
   });
 }
 /* ---------- ✨ 추천 엔진 ---------- */
-let recoState={cat:'', shown:8};
+let recoState={cat:'', shown:12, token:0};
 const nrm=s=>(s||'').replace(/[\s_·.,!/&@'’\-\(\)\[\]（）]/g,'').toLowerCase();
-function recoPool(){
+
+// 이미 보드에 있는지
+function alreadyAdded(name, url){
+  const nk=nrm(name); const cid=ytChannelId(url);
+  return data.some(d=>nrm(d.name)===nk || (cid && ytChannelId(d.profileUrl)===cid));
+}
+// 유튜브 실시간 채널 검색 (실제 채널만)
+async function liveYtSearch(query, pageToken){
+  const key=getYtKey(); if(!key||!query) return {items:[]};
+  const base='https://www.googleapis.com/youtube/v3/';
+  try{
+    const s=await fetch(`${base}search?part=snippet&type=channel&maxResults=15&regionCode=KR&relevanceLanguage=ko&q=${encodeURIComponent(query)}${pageToken?'&pageToken='+pageToken:''}&key=${encodeURIComponent(key)}`);
+    const sd=await s.json();
+    if(sd.error) return {error:sd.error.message||'검색 실패'};
+    const ids=(sd.items||[]).map(i=>i.id&&i.id.channelId).filter(Boolean);
+    if(!ids.length) return {items:[], next:sd.nextPageToken};
+    const c=await fetch(`${base}channels?part=snippet,statistics&id=${ids.join(',')}&key=${encodeURIComponent(key)}`);
+    const cd=await c.json();
+    if(cd.error) return {error:cd.error.message||'조회 실패'};
+    const items=(cd.items||[]).map(ch=>{ const st=ch.statistics||{}; return {
+      channelId:ch.id, name:ch.snippet.title, handle:ch.snippet.customUrl||'',
+      followers: st.hiddenSubscriberCount?'':fmtCount(st.subscriberCount), subs:+st.subscriberCount||0,
+      tier: st.hiddenSubscriberCount?'':tierFromSubs(st.subscriberCount),
+      thumb:(ch.snippet.thumbnails&&(ch.snippet.thumbnails.default||{}).url)||'',
+      url:'https://www.youtube.com/channel/'+ch.id, desc:(ch.snippet.description||'').slice(0,140) };
+    }).sort((a,b)=>b.subs-a.subs);
+    return {items, next:sd.nextPageToken};
+  }catch(e){ return {error:'네트워크 오류'}; }
+}
+let liveNext=null, liveItems=[];
+function recoCard(o){ // o: 통합 후보 객체
+  const row=el('div','yt-result');
+  const plat = o.platform==='YouTube' ? '<span class="plat yt">YT</span>' : o.platform==='Instagram' ? '<span class="plat ig">IG</span>' : '';
+  const added=alreadyAdded(o.name,o.url);
+  const av=o.thumb||avatarFor(o.platform,o.handle,o.url);
+  row.innerHTML=`
+    <div class="avatar" style="background:${catColor(o.category)};width:44px;height:44px;border-radius:10px;font-size:16px">${esc(initials(o.name))}${avatarImgTag(av)}</div>
+    <div class="info">
+      <div class="t">${esc(o.name)} ${plat}</div>
+      <div class="s">${o.live?'🟢 실시간':`<span style="color:${catColor(o.category)}">●</span> ${esc(o.category)}`}${o.tier?' · '+esc(o.tier):''}${o.followers?' · 👥 '+esc(o.followers):''}${o.email?' · ✉️ 이메일':''}</div>
+    </div>
+    ${o.url?`<a class="btn sm" href="${esc(o.url)}" target="_blank" rel="noopener">채널</a>`:''}
+    <button class="btn sm ${added?'':'primary'} radd">${added?'✓ 추가됨':'＋ 추가'}</button>`;
+  if(!added) row.querySelector('.radd').onclick=ev=>{
+    const rec={ id:genId(), name:o.name, handle:o.handle||'', platform:o.platform, category:(o.category||recoState.cat||'기타'),
+      tier:o.tier||'', followers:o.followers||'', profileUrl:o.url||'', resultUrl:o.url||'', email:o.email||'',
+      contactMethod:o.email?'이메일':'', status:'미접촉', avatar:o.thumb||(avatarCache[ytChannelId(o.url)]||''),
+      proposedRate:'',agreedRate:'',contentType:'',schedule:'',engagement:'', memo:o.desc||o.note||'', updatedAt:Date.now() };
+    data.unshift(rec); save(); sbUpsert(rec); render();
+    const btn=ev.currentTarget; btn.textContent='✓ 추가됨'; btn.classList.remove('primary'); btn.disabled=true;
+    toast(`＋ ${o.name} 목록에 추가`);
+  };
+  return row;
+}
+async function renderReco(){
+  const box=$('#recoBox'); if(!box) return;
+  const info=$('#recoInfo');
+  const key=getYtKey();
+  const q=($('#sq')?$('#sq').value.trim():'');
+  const cat=recoState.cat;
+  const query = q || (cat? (CAT_QUERY[cat]||cat) : '');
+
+  // 유튜브 실시간 검색 (키 + 검색어/카테고리)
+  if(key && query){
+    const myToken=++recoState.token;
+    box.innerHTML='<div class="keyhint">🟢 유튜브에서 실시간 검색 중…</div>';
+    info.textContent='· 실시간 유튜브';
+    const r=await liveYtSearch(query);
+    if(myToken!==recoState.token) return;            // 오래된 응답 무시
+    if(r.error){ box.innerHTML=`<div class="keyhint" style="color:var(--c-reject)">오류: ${esc(r.error)}</div>`; return; }
+    liveItems=(r.items||[]).map(it=>({ ...it, platform:'YouTube', category:cat||'기타', live:true }));
+    liveNext=r.next||null;
+    info.textContent=`· 실시간 유튜브 · ${liveItems.length}${liveNext?'+':''}개`;
+    box.innerHTML='';
+    if(!liveItems.length){ box.innerHTML='<div class="keyhint">실시간 결과가 없어요. 키워드를 바꿔보세요.</div>'; return; }
+    liveItems.forEach(o=>box.appendChild(recoCard(o)));
+    if(liveNext){
+      const more=el('button','btn sm','＋ 더 보기'); more.style.margin='2px auto';
+      more.onclick=async()=>{ more.textContent='불러오는 중…'; const nx=await liveYtSearch(query,liveNext);
+        liveNext=nx.next||null; (nx.items||[]).forEach(it=>box.insertBefore(recoCard({...it,platform:'YouTube',category:cat||'기타',live:true}), more));
+        if(!liveNext) more.remove(); else more.textContent='＋ 더 보기'; };
+      box.appendChild(more);
+    }
+    return;
+  }
+
+  // 키 없음 → 리서치 추천(실제 계정) + 실시간 검색 안내
   const have=new Set(data.map(d=>nrm(d.name)));
-  const q=($('#sq')?$('#sq').value.trim().toLowerCase():'');
-  // 보드의 카테고리 구성 → 선호도 점수
   const catCnt={}; data.forEach(d=>{ catCnt[d.category]=(catCnt[d.category]||0)+1; });
   let pool=RECO_DATA.filter(r=>!have.has(nrm(r.name)));
-  if(recoState.cat) pool=pool.filter(r=>r.category===recoState.cat);
-  if(q) pool=pool.filter(r=>[r.name,r.handle,r.note,r.category].join(' ').toLowerCase().includes(q));
-  return pool.map(r=>{
-    let score=(catCnt[r.category]||0)*10;          // 보드에 많은 카테고리 우선
-    if(r.url) score+=3;                             // 프로필 링크 검증된 후보 우선
-    if(r.email) score+=5;                           // 연락 이메일 확보된 후보 우선
-    score+=Math.min(parseKRW(r.followers)/1e6,3);   // 팔로워 규모 가산(상한)
-    return {r,score};
-  }).sort((a,b)=>b.score-a.score).map(x=>x.r);
-}
-function renderReco(){
-  const box=$('#recoBox'); if(!box) return;
-  const pool=recoPool();
-  const info=$('#recoInfo');
-  const basis = recoState.cat ? `'${recoState.cat}' 후보` : (data.length? '보드 구성에 맞춰 추천' : '인기 후보');
-  info.textContent=`· ${basis} · ${pool.length}명`;
+  if(cat) pool=pool.filter(r=>r.category===cat);
+  if(q){ const ql=q.toLowerCase(); pool=pool.filter(r=>[r.name,r.handle,r.note,r.category].join(' ').toLowerCase().includes(ql)); }
+  pool=pool.map(r=>{ let s=(catCnt[r.category]||0)*10; if(r.url)s+=3; if(r.email)s+=5; s+=Math.min(parseKRW(r.followers)/1e6,3); return {r,s}; })
+           .sort((a,b)=>b.s-a.s).map(x=>x.r);
+  info.textContent=`· 리서치 추천 · ${pool.length}명`;
   box.innerHTML='';
-  if(!pool.length){ box.innerHTML='<div class="keyhint">조건에 맞는 추천 후보가 없어요 — 키워드를 바꾸거나 유튜브 실시간 검색을 써보세요.</div>'; return; }
-  pool.slice(0,recoState.shown).forEach(r=>{
-    const row=el('div','yt-result');
-    const plat = r.platform==='YouTube' ? '<span class="plat yt">YT</span>' : r.platform==='Instagram' ? '<span class="plat ig">IG</span>' : '';
-    const av=avatarFor(r.platform,r.handle,r.url);
-    row.innerHTML=`
-      <div class="avatar" style="background:${catColor(r.category)};width:44px;height:44px;border-radius:10px;font-size:16px">${esc(initials(r.name))}${avatarImgTag(av)}</div>
-      <div class="info">
-        <div class="t">${esc(r.name)} ${plat}</div>
-        <div class="s"><span style="color:${catColor(r.category)}">●</span> ${esc(r.category)}${r.tier?' · '+esc(r.tier):''}${r.followers?' · 👥 '+esc(r.followers):''}${r.email?' · ✉️ 이메일 확보':''}</div>
-      </div>
-      ${r.url?`<a class="btn sm" href="${esc(r.url)}" target="_blank" rel="noopener">프로필</a>`:''}
-      <button class="btn sm primary radd">＋ 추가</button>`;
-    row.querySelector('.radd').onclick=ev=>{
-      const rec={ id:genId(), name:r.name, handle:r.handle, platform:r.platform, category:r.category,
-        tier:r.tier, followers:r.followers, profileUrl:r.url, resultUrl:r.url, email:r.email||'',
-        contactMethod:r.email?'이메일':'', status:'미접촉', avatar:(avatarCache[ytChannelId(r.url)]||''), proposedRate:'',agreedRate:'',
-        contentType:'',schedule:'',engagement:'', memo:r.note||'', updatedAt:Date.now() };
-      data.unshift(rec); save(); sbUpsert(rec); render();
-      const btn=ev.currentTarget; btn.textContent='✓ 추가됨'; btn.classList.remove('primary'); btn.disabled=true;
-      toast(`＋ ${r.name} 목록에 추가`);
-    };
-    box.appendChild(row);
-  });
+  const banner=el('div','keyhint');
+  banner.style.cssText='background:rgba(124,92,255,.1);border:1px solid var(--line);border-radius:9px;padding:9px 11px';
+  banner.innerHTML='💡 위에 <b>유튜브 API 키</b>를 연결하면 여기서 <b>실제 채널을 실시간 검색</b>해 등록할 수 있어요. (아래는 검증된 리서치 추천)';
+  box.appendChild(banner);
+  if(!pool.length){ box.appendChild(el('div','keyhint','조건에 맞는 추천이 없어요.')); return; }
+  pool.slice(0,recoState.shown).forEach(r=>box.appendChild(recoCard({ name:r.name,handle:r.handle,platform:r.platform,category:r.category,tier:r.tier,followers:r.followers,url:r.url,email:r.email,note:r.note })));
   if(pool.length>recoState.shown){
-    const more=el('button','btn sm',`＋ 추천 더 보기 (${pool.length-recoState.shown})`);
-    more.style.margin='2px auto';
-    more.onclick=()=>{ recoState.shown+=8; renderReco(); };
+    const more=el('button','btn sm',`＋ 더 보기 (${pool.length-recoState.shown})`); more.style.margin='2px auto';
+    more.onclick=()=>{ recoState.shown+=12; renderReco(); };
     box.appendChild(more);
   }
-  enrichRecoAvatars(pool.slice(0,recoState.shown));   // 유튜브 API 키 있으면 실제 썸네일 채우기
+  enrichRecoAvatars(pool.slice(0,recoState.shown));
 }
-// 유튜브 채널ID만 있는 추천 항목의 실제 프로필 썸네일을 API로 채움(키 있을 때만)
 async function enrichRecoAvatars(vis){
-  const key=($('#ytKey')?$('#ytKey').value.trim():''); if(!key) return;
+  const key=getYtKey(); if(!key) return;
   const ids=[...new Set(vis.map(r=>ytChannelId(r.url)).filter(Boolean).filter(id=>!(id in avatarCache)))];
   if(!ids.length) return;
-  ids.forEach(id=>{ avatarCache[id]=''; });   // 중복 요청 방지 표시
+  ids.forEach(id=>{ avatarCache[id]=''; });
   let changed=false;
   for(let i=0;i<ids.length;i+=50){
     try{
@@ -1197,16 +1250,34 @@ async function enrichRecoAvatars(vis){
   if(changed && $('#searchOverlay').classList.contains('show')) renderReco();
 }
 
+function renderYtKeyState(){
+  const key=getYtKey();
+  const st=$('#ytKeyState'); const row=$('#ytKeyInputRow'); const help=$('#ytKeyHelp');
+  if(key){
+    st.innerHTML='<span style="color:#3ecf8e">✓ 연결됨 — 실시간 검색 사용 가능</span>';
+    if($('#ytKey')) $('#ytKey').value=key;
+    row.style.display='none'; help.style.display='none';
+  } else {
+    st.innerHTML='<span style="color:#fbbf24">미연결 — 실시간 검색을 켜려면 키 입력</span>';
+    row.style.display=''; help.style.display='';
+  }
+}
+function saveYtKey(){
+  const k=$('#ytKey').value.trim();
+  if(!k){ toast('API 키를 입력해 주세요'); return; }
+  try{ localStorage.setItem('yt_api_key',k); }catch(e){}
+  renderYtKeyState(); recoState.shown=12; renderReco();
+  toast('유튜브 실시간 검색이 연결됐어요');
+}
 function openSearch(){
   renderSearchLinks();
-  fillSelect($('#qa_platform'),['Instagram','YouTube','틱톡','블로그','기타'],'Instagram');
+  fillSelect($('#qa_platform'),['Instagram','틱톡','YouTube','블로그','기타'],'Instagram');
   fillSelect($('#qa_category'),CATEGORIES.map(c=>c.key),'기타');
   $('#qa_input').value=''; $('#qa_name').value=''; delete $('#qa_input').dataset.handle; delete $('#qa_input').dataset.url; qaPreview();
-  try{ const k=localStorage.getItem('yt_api_key'); if(k)$('#ytKey').value=k; }catch(e){}
-  $('#ytResults').innerHTML='';
-  recoState.shown=8; renderReco();
+  renderYtKeyState();
+  recoState.shown=12; recoState.token++; renderReco();
   $('#searchOverlay').classList.add('show');
-  setTimeout(()=>$('#qa_input').focus(),50);
+  setTimeout(()=>$('#sq').focus(),50);
 }
 // 붙여넣은 링크/핸들에서 플랫폼·핸들·이름 자동 인식
 function qaDetect(){
@@ -1389,7 +1460,7 @@ function init(){
     const tryConnect=()=>{ if(window.supabase) sbConnect(sbConfig,true); else setTimeout(tryConnect,300); };
     tryConnect();
   }
-  $('#btnAdd').onclick=()=>openEdit(null);
+  $('#btnAdd').onclick=openSearch;
   $('#btnTeam').onclick=openTeam;
   $('#teamClose').onclick=()=>$('#teamOverlay').classList.remove('show');
   $('#teamOverlay').onclick=e=>{ if(e.target===$('#teamOverlay')) $('#teamOverlay').classList.remove('show'); };
@@ -1400,7 +1471,9 @@ function init(){
     navigator.clipboard&&navigator.clipboard.writeText(SB_SETUP_SQL); toast('SQL을 복사했어요'); };
   $('#btnSearch').onclick=openSearch;
   $('#searchClose').onclick=closeSearch;
-  $('#ytSearchBtn').onclick=ytSearch;
+  $('#ytSearchBtn').onclick=()=>{ recoState.token++; recoState.shown=12; renderReco(); };
+  $('#ytKeySave').onclick=saveYtKey;
+  $('#ytKey').addEventListener('keydown',e=>{ if(e.key==='Enter') saveYtKey(); });
   $('#qa_input').addEventListener('input',qaDetect);
   $('#qa_input').addEventListener('keydown',e=>{ if(e.key==='Enter') qaAdd(); });
   $('#qa_name').addEventListener('input',qaPreview);
@@ -1408,8 +1481,9 @@ function init(){
   $('#qa_platform').addEventListener('change',qaPreview);
   $('#qaAdd').onclick=qaAdd;
   $('#searchOverlay').onclick=e=>{ if(e.target===$('#searchOverlay')) closeSearch(); };
-  $('#sq').addEventListener('input',()=>{ recoState.shown=8; renderReco(); });
-  $('#sq').addEventListener('keydown',e=>{ if(e.key==='Enter'){ recoState.shown=8; renderReco(); } });
+  let sqTimer=null;
+  $('#sq').addEventListener('input',()=>{ recoState.shown=12; clearTimeout(sqTimer); sqTimer=setTimeout(renderReco, 450); });
+  $('#sq').addEventListener('keydown',e=>{ if(e.key==='Enter'){ clearTimeout(sqTimer); recoState.token++; recoState.shown=12; renderReco(); } });
   $('#btnCancel').onclick=closeModal;
   $('#btnVerify').onclick=()=>verifyFromModal(false);
   $('#btnSave').onclick=saveModal;
