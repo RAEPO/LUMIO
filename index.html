@@ -164,6 +164,14 @@
   .plat{font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px}
   .plat.ig{background:rgba(255,107,166,.15);color:#ff6ba6}
   .plat.yt{background:rgba(239,68,68,.15);color:#f87171}
+  .plat.blog{background:rgba(3,199,90,.15);color:#03c75a}
+  /* 검색 모달 탭 */
+  .stabs{display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:2px}
+  .stabs .stab{background:none;border:none;color:var(--muted);font-size:13.5px;font-weight:700;
+    padding:9px 14px;cursor:pointer;border-radius:8px 8px 0 0;position:relative}
+  .stabs .stab:hover{color:var(--txt)}
+  .stabs .stab.on{color:var(--txt)}
+  .stabs .stab.on::after{content:"";position:absolute;left:8px;right:8px;bottom:-3px;height:2px;background:var(--brand);border-radius:2px}
   /* 활동 로그 */
   .log-list{max-height:190px;overflow-y:auto;display:flex;flex-direction:column;gap:7px;margin-bottom:8px}
   .log-item{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12.5px}
@@ -468,6 +476,11 @@
       <h2>실제 인플루언서 검색 · 등록</h2>
     </div>
     <div class="modal-body">
+      <div class="stabs">
+        <button class="stab on" id="stabMain">🔎 인플루언서 검색</button>
+        <button class="stab" id="stabNaver"><span style="color:#03c75a;font-weight:800">N</span> 네이버 블로그</button>
+      </div>
+      <div id="tabMain">
       <!-- 유튜브 실시간 검색 연결 상태 -->
       <div id="ytKeyRow">
         <div class="section-t">▶️ 유튜브 실시간 검색 연결 <span class="keyhint" id="ytKeyState"></span></div>
@@ -503,6 +516,38 @@
       <div class="section-t" style="margin-top:4px">🌐 플랫폼에서 계정 찾기 <span class="keyhint">· 새 탭에서 검색 후 링크 복사</span></div>
       <div class="plat-links" id="platLinks"></div>
       <div class="plat-links" id="dbLinks" style="margin-top:6px"></div>
+      </div><!-- /tabMain -->
+
+      <!-- 네이버 블로그 탭 -->
+      <div id="tabNaver" style="display:none">
+        <div class="keyhint" style="background:rgba(3,199,90,.1);border:1px solid var(--line);border-radius:9px;padding:10px 12px;line-height:1.5">
+          네이버 블로그는 유튜브처럼 <b>완전 자동 실시간 검색</b>이 막혀 있어요(네이버 정책·보안).
+          그래서 <b>①</b> 아래에서 네이버 블로그·인플루언서를 검색해 실제 블로거를 찾고, <b>②</b> 그 <b>블로그 주소</b>를 붙여넣어 등록합니다.
+          네이버 검색 결과에서 직접 고르니 <b>실제 블로그</b>만 등록돼요.
+        </div>
+
+        <div class="section-t">① 네이버에서 블로거 찾기 <span class="keyhint">· 새 탭에서 열려요</span></div>
+        <div class="searchbar-lg">
+          <input id="nq" placeholder="키워드 (예: 캠핑, 비건 화장품, 인테리어 살림)">
+          <button class="btn primary" id="nSearchBtn">네이버 검색</button>
+        </div>
+        <div class="plat-links" id="naverLinks" style="margin-top:8px"></div>
+        <div class="section-t" style="margin-top:6px">카테고리로 빠르게 <span class="keyhint">· 클릭하면 네이버 블로그 검색이 열려요</span></div>
+        <div class="plat-links" id="naverCatQuick"></div>
+
+        <div class="section-t" style="margin-top:12px">② 찾은 블로그 등록 <span class="keyhint">· 블로그 주소 또는 아이디 붙여넣기</span></div>
+        <div class="qa-row">
+          <div class="qa-preview" id="nbPreview" style="color:#03c75a">N</div>
+          <input id="nb_input" style="flex:1;padding:11px 13px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);font-size:14px" placeholder="blog.naver.com/아이디  ·  또는 블로그 아이디만">
+        </div>
+        <div class="grid3">
+          <div class="field"><label>블로그명/활동명</label><input id="nb_name" placeholder="예: 캠핑하는 지영"></div>
+          <div class="field"><label>규모</label><select id="nb_tier"><option value="">-</option><option>나노</option><option>마이크로</option><option>미드</option><option>메가</option></select></div>
+          <div class="field"><label>카테고리</label><select id="nb_category"></select></div>
+        </div>
+        <button class="btn primary" id="nbAdd" style="width:100%">＋ 블로거 등록</button>
+        <div class="keyhint" style="margin-top:6px">💡 블로그 주소는 네이버 블로그에서 <b>공유 → URL 복사</b> 또는 주소창에서 복사하면 돼요. (예: <b>blog.naver.com/example</b>)</div>
+      </div>
     </div>
     <div class="modal-foot">
       <div class="keyhint">이름만으로는 등록되지 않아요 — 실제 계정만 등록됩니다.</div>
@@ -1161,6 +1206,7 @@ function cardEl(d){
   if(selectMode && selected.has(d.id)) c.classList.add('sel');
   const plat = d.platform==='YouTube' ? '<span class="plat yt">YT</span>' :
                d.platform==='Instagram' ? '<span class="plat ig">IG</span>' :
+               d.platform==='블로그' ? '<span class="plat blog">blog</span>' :
                `<span class="plat" style="background:var(--panel);color:var(--muted)">${esc((d.platform||'').slice(0,2))}</span>`;
   const rate = d.agreedRate||d.proposedRate;
   const cmtN = (d.comments&&d.comments.length)||0;
@@ -1666,6 +1712,73 @@ function renderCatQuick(){
     cq.appendChild(b);
   });
 }
+
+/* ---------- 네이버 블로그 탭 ---------- */
+const NAVER_SEARCH = [
+  {label:'네이버 블로그', icon:'📝', url:q=>`https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(q)}`},
+  {label:'네이버 인플루언서', icon:'⭐', url:q=>`https://search.naver.com/search.naver?where=influencer&query=${encodeURIComponent(q)}`},
+  {label:'네이버 통합검색', icon:'🟢', url:q=>`https://search.naver.com/search.naver?query=${encodeURIComponent(q+' 블로거')}`},
+  {label:'네이버 인플루언서 홈', icon:'🏠', url:()=>`https://in.naver.com/`},
+];
+function switchSearchTab(which){
+  const main=which==='main';
+  $('#tabMain').style.display=main?'':'none';
+  $('#tabNaver').style.display=main?'none':'';
+  $('#stabMain').classList.toggle('on',main);
+  $('#stabNaver').classList.toggle('on',!main);
+  if(!main){ setTimeout(()=>$('#nq').focus(),40); }
+}
+function naverQuery(){ const q=$('#nq').value.trim(); if(!q){ toast('검색어를 입력해 주세요'); $('#nq').focus(); return null; } return q; }
+function renderNaverLinks(){
+  const box=$('#naverLinks'); box.innerHTML='';
+  NAVER_SEARCH.forEach(p=>{
+    const b=el('button','',`${p.icon} ${p.label}`);
+    b.onclick=()=>{ if(/홈$/.test(p.label)){ window.open(p.url(),'_blank','noopener'); return; } const q=naverQuery(); if(q) window.open(p.url(q),'_blank','noopener'); };
+    box.appendChild(b);
+  });
+  const cq=$('#naverCatQuick'); cq.innerHTML='';
+  CATEGORIES.filter(c=>c.key!=='기타').forEach(c=>{
+    const b=el('button','',`<span style="width:8px;height:8px;border-radius:50%;background:var(${c.var});display:inline-block"></span> ${c.key}`);
+    b.onclick=()=>{
+      const kw=(CAT_QUERY[c.key]||c.key)+' 블로거';
+      $('#nb_category').value=c.key;
+      window.open(`https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(kw)}`,'_blank','noopener');
+    };
+    cq.appendChild(b);
+  });
+}
+// blog.naver.com/{id} · m.blog.naver.com/{id} · 순수 아이디에서 blogId 추출
+function parseNaverId(v){
+  v=(v||'').trim();
+  if(!v) return '';
+  let m=v.match(/blog\.naver\.com\/(?:PostList\.naver\?blogId=)?([A-Za-z0-9_\-]+)/i);
+  if(m) return m[1];
+  m=v.match(/blogId=([A-Za-z0-9_\-]+)/i);
+  if(m) return m[1];
+  if(/^@?[A-Za-z0-9_\-]{2,40}$/.test(v)) return v.replace(/^@/,'');
+  return '';
+}
+function nbPreview(){
+  const id=parseNaverId($('#nb_input').value);
+  const nm=($('#nb_name').value||id||'?').trim();
+  $('#nbPreview').textContent=id?esc((nm||'N').slice(0,2)):'N';
+}
+function nbAdd(){
+  const raw=$('#nb_input').value.trim();
+  const id=parseNaverId(raw);
+  if(!id){ toast('네이버 블로그 주소나 아이디를 넣어주세요 (예: blog.naver.com/example)'); $('#nb_input').focus(); return; }
+  const url=`https://blog.naver.com/${id}`;
+  const name=$('#nb_name').value.trim() || id;
+  if(alreadyAdded(name, url) || data.some(d=>d.profileUrl===url)){ toast('이미 목록에 있는 블로그예요'); return; }
+  const rec={ id:genId(), name, handle:id, platform:'블로그', category:$('#nb_category').value||'기타',
+    tier:$('#nb_tier').value||'', followers:'', profileUrl:url, resultUrl:url, email:'', contactMethod:'', status:'미접촉',
+    avatar:'', proposedRate:'',agreedRate:'',contentType:'',schedule:'',engagement:'', memo:'네이버 블로그',
+    updatedBy:currentUserName(), updatedAt:Date.now() };
+  data.unshift(rec); save(); sbUpsert(rec);
+  $('#nb_input').value=''; $('#nb_name').value=''; $('#nb_tier').value=''; nbPreview();
+  render(); toast(`＋ ${name} 블로거 등록`); $('#nb_input').focus();
+}
+
 /* ---------- ✨ 추천 엔진 ---------- */
 let recoState={cat:'', shown:12, token:0};
 const nrm=s=>(s||'').replace(/[\s_·.,!/&@'’\-\(\)\[\]（）]/g,'').toLowerCase();
@@ -1819,8 +1932,12 @@ function saveYtKey(){
 }
 function openSearch(){
   renderSearchLinks();
+  renderNaverLinks();
+  switchSearchTab('main');
   fillSelect($('#qa_platform'),['Instagram','틱톡','YouTube','블로그','기타'],'Instagram');
   fillSelect($('#qa_category'),CATEGORIES.map(c=>c.key),'기타');
+  fillSelect($('#nb_category'),CATEGORIES.map(c=>c.key),'기타');
+  $('#nb_input').value=''; $('#nb_name').value=''; nbPreview();
   $('#qa_input').value=''; $('#qa_name').value=''; delete $('#qa_input').dataset.handle; delete $('#qa_input').dataset.url; qaPreview();
   renderYtKeyState();
   recoState.shown=12; recoState.token++; renderReco(true);
@@ -2051,6 +2168,16 @@ function init(){
   $('#qa_name').addEventListener('keydown',e=>{ if(e.key==='Enter') qaAdd(); });
   $('#qa_platform').addEventListener('change',qaPreview);
   $('#qaAdd').onclick=qaAdd;
+  // 네이버 블로그 탭
+  $('#stabMain').onclick=()=>switchSearchTab('main');
+  $('#stabNaver').onclick=()=>switchSearchTab('naver');
+  $('#nSearchBtn').onclick=()=>{ const q=naverQuery(); if(q) window.open(`https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(q)}`,'_blank','noopener'); };
+  $('#nq').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#nSearchBtn').click(); });
+  $('#nb_input').addEventListener('input',nbPreview);
+  $('#nb_input').addEventListener('keydown',e=>{ if(e.key==='Enter') nbAdd(); });
+  $('#nb_name').addEventListener('input',nbPreview);
+  $('#nb_name').addEventListener('keydown',e=>{ if(e.key==='Enter') nbAdd(); });
+  $('#nbAdd').onclick=nbAdd;
   $('#searchOverlay').onclick=e=>{ if(e.target===$('#searchOverlay')) closeSearch(); };
   let sqTimer=null;
   $('#sq').addEventListener('input',()=>{ recoState.shown=12; clearTimeout(sqTimer); sqTimer=setTimeout(()=>renderReco(false), 300); });
