@@ -73,6 +73,29 @@
   .btn.sm{padding:6px 10px;font-size:12.5px}
   .btn svg{width:15px;height:15px;flex:0 0 15px}
   .btn.ico{min-width:40px;padding:9px;justify-content:center}
+  /* Auth gate */
+  #authGate{position:fixed;inset:0;z-index:500;background:linear-gradient(180deg,var(--bg-grad-top),var(--bg-grad-bot));
+    display:flex;align-items:center;justify-content:center;padding:20px}
+  .auth-card{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--line);
+    border-radius:18px;padding:26px 24px;box-shadow:var(--shadow)}
+  .auth-card .brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .auth-card .brand .mk{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center}
+  .auth-card .brand .mk svg{width:19px;height:19px;color:#fff}
+  .auth-card h2{margin:0;font-size:19px;font-weight:800}
+  .auth-card .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .auth-tabs{display:flex;gap:5px;margin:16px 0;background:var(--panel2);border-radius:10px;padding:4px}
+  .auth-tabs button{flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:13.5px;color:var(--muted)}
+  .auth-tabs button.on{background:var(--panel);color:var(--txt);box-shadow:var(--shadow)}
+  .auth-field{margin-bottom:11px}
+  .auth-field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px;font-weight:600}
+  .auth-field input{width:100%;padding:11px 13px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);font-size:14px}
+  .auth-field input:focus{outline:none;border-color:var(--brand)}
+  .auth-msg{font-size:12.5px;min-height:16px;margin:4px 0 10px}
+  .user-chip{display:inline-flex;align-items:center;gap:7px}
+  .user-chip .cdot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+  .admin-user{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--panel2);margin-bottom:8px}
+  .admin-user .un{font-weight:700;font-size:13.5px}
+  .admin-user .badge{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px}
 
   .stats{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
   .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;
@@ -276,7 +299,8 @@
     </div>
     <div class="spacer"></div>
     <button class="btn ico" id="btnTheme" title="화면 모드 전환"></button>
-    <button class="btn" id="btnTeam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span id="teamLabel">팀 연결</span></button>
+    <button class="btn hidden" id="btnAdmin" title="가입 승인 관리"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 11 2 2 4-4"/></svg>승인 관리</button>
+    <button class="btn" id="btnUser" title="로그아웃"><span class="user-chip"><span class="cdot" id="connDot"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span id="userLabel">-</span></span></button>
     <button class="btn" id="btnTpl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>템플릿</button>
     <button class="btn" id="btnSearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>인플루언서 검색</button>
     <button class="btn primary" id="btnAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>인플루언서 추가</button>
@@ -482,6 +506,53 @@
   </div>
 </div>
 
+<!-- Auth gate (로그인/가입/승인대기) -->
+<div id="authGate">
+  <div class="auth-card">
+    <div class="brand">
+      <div class="mk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div>
+      <div><h2>인플루언서 섭외 보드</h2><div class="sub">팀 로그인</div></div>
+    </div>
+    <div id="authForms">
+      <div class="auth-tabs"><button id="tabLogin" class="on">로그인</button><button id="tabSignup">가입 신청</button></div>
+      <div class="auth-field"><label>아이디</label><input id="au_user" autocomplete="username" placeholder="영문·숫자 아이디"></div>
+      <div class="auth-field"><label>비밀번호</label><input id="au_pw" type="password" autocomplete="current-password" placeholder="비밀번호"></div>
+      <div class="auth-msg" id="au_msg"></div>
+      <button class="btn primary" id="au_submit" style="width:100%;justify-content:center">로그인</button>
+      <div class="keyhint" id="au_hint" style="margin-top:12px"></div>
+    </div>
+    <div id="pendingBox" class="hidden" style="text-align:center">
+      <div style="font-size:36px;margin-bottom:6px">⏳</div>
+      <h2>승인 대기 중</h2>
+      <div class="sub" style="margin:8px 0 18px">가입 신청이 접수됐어요.<br>관리자 승인 후 이용할 수 있습니다.</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="btn primary" id="pendRefresh">승인됐는지 확인</button>
+        <button class="btn" id="pendLogout">로그아웃</button>
+      </div>
+    </div>
+    <div id="authLoading" style="text-align:center;color:var(--muted);font-size:13px;padding:12px">불러오는 중…</div>
+  </div>
+</div>
+
+<!-- Admin: 가입 승인 관리 -->
+<div class="overlay" id="adminOverlay">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <div class="avatar" style="background:var(--brand)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 11 2 2 4-4"/></svg></div>
+      <h2>가입 승인 관리</h2>
+    </div>
+    <div class="modal-body">
+      <div class="keyhint">가입 신청한 팀원을 승인하면 보드를 이용할 수 있어요. 승인 해제하면 접근이 막힙니다.</div>
+      <div id="adminList" style="margin-top:8px">불러오는 중…</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn sm" id="adminRefresh">새로고침</button>
+      <div class="spacer"></div>
+      <button class="btn" id="adminClose">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -591,12 +662,121 @@ let sb=null, sbConfig=null, sbChannel=null, sbReady=false, sbApplying=false, sbL
 // 팀 기본 연결 정보 (미리 심어둠 — 열자마자 자동 연결)
 const SB_DEFAULT={url:'https://flounlexeycwhdxntbkq.supabase.co', key:'sb_publishable_KSaC_1GaChkU7-kGmyuvUQ_cLO8dJrQ'};
 function loadSbConfig(){ try{ return JSON.parse(localStorage.getItem('sb_config')||'null'); }catch(e){ return null; } }
+
+/* ================= 로그인 · 승인 시스템 ================= */
+const AUTH_DOMAIN='@lumio.app';                 // 아이디를 내부적으로 이메일로 매핑
+let authUser=null, authMode='login';
+const uname2email=u=>u.trim().toLowerCase()+AUTH_DOMAIN;
+function ensureClient(){ if(!sb && window.supabase) sb=window.supabase.createClient(SB_DEFAULT.url, SB_DEFAULT.key); return sb; }
+function currentUserName(){ return authUser?authUser.username:''; }
+function showGate(mode){ // 'login' | 'signup' | 'pending' | 'loading' | 'off'
+  const g=$('#authGate'); if(mode==='off'){ g.style.display='none'; return; }
+  g.style.display='flex';
+  $('#authForms').classList.toggle('hidden', mode!=='login'&&mode!=='signup');
+  $('#pendingBox').classList.toggle('hidden', mode!=='pending');
+  $('#authLoading').style.display = mode==='loading'?'block':'none';
+  if(mode==='login'||mode==='signup'){
+    authMode=mode;
+    $('#tabLogin').classList.toggle('on',mode==='login');
+    $('#tabSignup').classList.toggle('on',mode==='signup');
+    $('#au_submit').textContent = mode==='login'?'로그인':'가입 신청';
+    $('#au_pw').setAttribute('autocomplete', mode==='login'?'current-password':'new-password');
+    $('#au_hint').innerHTML = mode==='login'
+      ? '처음이면 <b>가입 신청</b> 후 관리자 승인을 받아주세요.'
+      : '아이디는 영문·숫자 3~20자. 가입 후 관리자가 승인하면 이용할 수 있어요.';
+    $('#au_msg').textContent='';
+  }
+}
+async function loadProfile(){
+  ensureClient(); if(!sb) return null;
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user){ authUser=null; return null; }
+  let prof=null;
+  try{ const r=await sb.from('profiles').select('username,approved,is_admin').eq('id',user.id).single(); prof=r.data; }catch(e){}
+  authUser={ id:user.id, username:(prof&&prof.username)||(user.user_metadata&&user.user_metadata.username)||(user.email||'').split('@')[0],
+             approved: !!(prof&&prof.approved), is_admin: !!(prof&&prof.is_admin) };
+  return authUser;
+}
+async function routeAuth(){
+  await loadProfile();
+  if(!authUser){ showGate('login'); return; }
+  if(!authUser.approved){ showGate('pending'); return; }
+  // 승인됨 → 앱 진입
+  showGate('off');
+  $('#userLabel').textContent=authUser.username;
+  $('#btnAdmin').classList.toggle('hidden', !authUser.is_admin);
+  sbConfig=SB_DEFAULT; setTeamLabel();
+  await sbConnect(SB_DEFAULT, true);
+}
+async function doAuthSubmit(){
+  const u=$('#au_user').value.trim(), pw=$('#au_pw').value;
+  const msg=$('#au_msg');
+  if(!u||!pw){ msg.style.color='#fbbf24'; msg.textContent='아이디와 비밀번호를 입력해 주세요'; return; }
+  ensureClient(); if(!sb){ msg.textContent='연결 준비 중이에요. 잠시 후 다시 시도해 주세요'; return; }
+  const btn=$('#au_submit'); const old=btn.textContent; btn.disabled=true; btn.textContent='처리 중…';
+  try{
+    if(authMode==='signup'){
+      if(!/^[a-zA-Z0-9._-]{3,20}$/.test(u)){ msg.style.color='#f87171'; msg.textContent='아이디는 영문·숫자 3~20자예요'; return; }
+      if(pw.length<6){ msg.style.color='#f87171'; msg.textContent='비밀번호는 6자 이상이어야 해요'; return; }
+      const { error }=await sb.auth.signUp({ email:uname2email(u), password:pw, options:{ data:{ username:u } } });
+      if(error){ msg.style.color='#f87171'; msg.textContent = /registered|exists/i.test(error.message)?'이미 사용 중인 아이디예요':('가입 실패: '+error.message); return; }
+      await routeAuth();
+    } else {
+      const { error }=await sb.auth.signInWithPassword({ email:uname2email(u), password:pw });
+      if(error){ msg.style.color='#f87171'; msg.textContent='아이디 또는 비밀번호가 올바르지 않아요'; return; }
+      await routeAuth();
+    }
+  }catch(e){ msg.style.color='#f87171'; msg.textContent='오류가 발생했어요. 잠시 후 다시 시도해 주세요'; }
+  finally{ btn.disabled=false; btn.textContent=old; }
+}
+async function doLogout(){
+  try{ if(sbChannel&&sb) sb.removeChannel(sbChannel); }catch(e){}
+  sbChannel=null; sbReady=false; sbLive=false;
+  try{ await sb.auth.signOut(); }catch(e){}
+  authUser=null; data=[]; save(); render();
+  $('#au_user').value=''; $('#au_pw').value='';
+  showGate('login');
+}
+/* ---- 관리자: 승인 관리 ---- */
+async function openAdmin(){
+  if(!authUser||!authUser.is_admin) return;
+  $('#adminOverlay').classList.add('show'); renderAdminList();
+}
+async function renderAdminList(){
+  const box=$('#adminList'); box.innerHTML='<div class="keyhint">불러오는 중…</div>';
+  let rows=[];
+  try{ const r=await sb.from('profiles').select('id,username,approved,is_admin,created_at').order('created_at',{ascending:false}); rows=r.data||[]; if(r.error) throw r.error; }
+  catch(e){ box.innerHTML='<div class="keyhint" style="color:var(--c-reject)">목록을 불러오지 못했어요('+esc(e.message||'권한 확인')+')</div>'; return; }
+  if(!rows.length){ box.innerHTML='<div class="keyhint">아직 가입한 사용자가 없어요.</div>'; return; }
+  box.innerHTML='';
+  rows.forEach(u=>{
+    const row=el('div','admin-user');
+    const me=u.id===authUser.id;
+    row.innerHTML=`
+      <div class="avatar" style="background:${u.approved?'var(--c-confirm)':'var(--faint)'};width:34px;height:34px">${esc((u.username||'?').slice(0,2))}</div>
+      <div style="flex:1;min-width:0">
+        <div class="un">${esc(u.username||'(이름없음)')} ${u.is_admin?'<span class="badge" style="background:var(--brand);color:#fff">관리자</span>':''}${me?' <span class="keyhint">(나)</span>':''}</div>
+        <div class="keyhint">${u.approved?'<span style="color:#3ecf8e">● 승인됨</span>':'<span style="color:#fbbf24">● 승인 대기</span>'}</div>
+      </div>`;
+    const btn=el('button','btn sm'+(u.approved?'':' primary'), u.approved?'승인 해제':'승인');
+    if(u.is_admin && !u.approved){} // n/a
+    btn.disabled = me && u.is_admin;   // 관리자 본인은 자기 승인 해제 방지
+    btn.onclick=async()=>{ btn.disabled=true; btn.textContent='...';
+      const { error }=await sb.from('profiles').update({ approved:!u.approved }).eq('id',u.id);
+      if(error){ toast('변경 실패: '+(error.message||'권한 확인')); } else { toast(u.approved?'승인을 해제했어요':'승인했어요'); }
+      renderAdminList(); };
+    row.appendChild(btn);
+    box.appendChild(row);
+  });
+}
 function setTeamLabel(){
-  const l=$('#teamLabel');
-  if(sbReady && sbLive){ l.innerHTML='팀 연결됨 <span style="color:#3ecf8e">●</span>'; }
-  else if(sbReady && !sbLive){ l.innerHTML='재연결 중 <span style="color:#fbbf24">●</span>'; }
-  else if(sbConfig){ l.innerHTML='연결 중…'; }
-  else l.textContent='팀 연결';
+  const dot=$('#connDot'); if(!dot) return;
+  let c='var(--faint)';
+  if(sbReady && sbLive) c='#3ecf8e';         // 실시간 연결
+  else if(sbReady && !sbLive) c='#fbbf24';   // 재연결 중
+  else if(sbConfig) c='#60a5fa';             // 연결 중
+  dot.style.background=c;
+  dot.title = (sbReady&&sbLive)?'실시간 연결됨':(sbReady?'재연결 중':'연결 중');
 }
 function scheduleReconnect(){
   if(sbReconnectT || !sbConfig) return;
@@ -605,7 +785,7 @@ function scheduleReconnect(){
 async function sbConnect(cfg, silent){
   if(!window.supabase){ if(!silent)toast('Supabase 라이브러리를 불러오지 못했어요(인터넷 확인)'); return false; }
   try{
-    sb=window.supabase.createClient(cfg.url, cfg.key);
+    if(!sb) sb=window.supabase.createClient(cfg.url, cfg.key);   // 인증에 쓰는 클라이언트 재사용
     const { data:rows, error }=await sb.from(SB_TABLE).select('id,doc');
     if(error) throw error;
     sbConfig=cfg; sbReady=true;
@@ -688,6 +868,9 @@ function openTeam(){
 const $ = s => document.querySelector(s);
 const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
 function initials(name){ return (name||'?').trim().slice(0,2); }
+function relTime(ts){ if(!ts) return ''; const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60) return '방금'; if(s<3600) return Math.floor(s/60)+'분 전'; if(s<86400) return Math.floor(s/3600)+'시간 전';
+  const d=Math.floor(s/86400); return d<7? d+'일 전' : new Date(ts).toLocaleDateString('ko-KR'); }
 // 핸들 기반 프로필 이미지 URL (unavatar.io — 플랫폼별 아바타를 이미지로 반환)
 const UNAVATAR_PROV={'Instagram':'instagram','YouTube':'youtube','틱톡':'tiktok','X (트위터)':'twitter','X':'twitter'};
 const avatarCache={};   // 유튜브 채널ID -> 실제 썸네일(API로 채움)
@@ -850,7 +1033,7 @@ function cardEl(d){
 }
 function setStatus(id, status){
   const d=data.find(x=>x.id===id); if(!d || d.status===status) return;
-  d.status=status; d.updatedAt=Date.now(); save(); sbUpsert(d); render(); toast(`${d.name} → ${status}`);
+  d.status=status; d.updatedBy=currentUserName(); d.updatedAt=Date.now(); save(); sbUpsert(d); render(); toast(`${d.name} → ${status}`);
 }
 
 /* ---------- Board ---------- */
@@ -883,7 +1066,7 @@ function renderBoard(){
       e.preventDefault();body.classList.remove('drag-over');
       const id=e.dataTransfer.getData('text/plain');
       const d=data.find(x=>x.id===id);
-      if(d && d.status!==s.key){ d.status=s.key; d.updatedAt=Date.now(); save(); sbUpsert(d); render(); toast(`${d.name} → ${s.key}`); }
+      if(d && d.status!==s.key){ d.status=s.key; d.updatedBy=currentUserName(); d.updatedAt=Date.now(); save(); sbUpsert(d); render(); toast(`${d.name} → ${s.key}`); }
     });
     col.appendChild(body);
     board.appendChild(col);
@@ -937,11 +1120,15 @@ function openEdit(id, prefill){
   $('#mAvatar').innerHTML = esc(initials(d.name||'?')) + avatarImgTag(avatarSrc(d));
   $('#mAvatar').style.background = catColor(d.category||'기타');
   modalVerifiedAvatar = d.avatar||'';
-  $('#verifyStatus').innerHTML = id ? '' : '<span style="color:var(--muted)">신규 등록 시 실제 계정 확인</span>';
+  if(id){
+    const rel = d.updatedAt ? relTime(d.updatedAt) : '';
+    $('#verifyStatus').innerHTML = d.updatedBy ? `<span style="color:var(--muted)">최근 수정: <b>${esc(d.updatedBy)}</b>${rel?' · '+rel:''}</span>` : '';
+  } else { $('#verifyStatus').innerHTML='<span style="color:var(--muted)">신규 등록 시 실제 계정 확인</span>'; }
   const set=(k,v)=>$('#f_'+k).value = d[k]!=null?d[k]:(v||'');
   set('name');set('handle');set('followers');set('profileUrl');set('email');
   set('proposedRate');set('agreedRate');set('contentType');set('schedule');
   set('engagement');set('resultUrl');set('memo');set('assignee');set('followup');
+  if(!id && !$('#f_assignee').value) $('#f_assignee').value=currentUserName();
   // 담당자 자동완성(기존 담당자 목록)
   $('#assigneeList').innerHTML=[...new Set(data.map(x=>x.assignee).filter(Boolean))].map(a=>`<option value="${esc(a)}">`).join('');
   // 템플릿 선택 목록
@@ -994,7 +1181,7 @@ async function saveModal(){
     contactMethod:g('contactMethod'),status:g('status'),proposedRate:g('proposedRate'),
     agreedRate:g('agreedRate'),contentType:g('contentType'),schedule:g('schedule'),
     engagement:g('engagement'),resultUrl:g('resultUrl'),memo:g('memo'),
-    assignee:g('assignee'),followup:g('followup'),updatedAt:Date.now()
+    assignee:g('assignee'),followup:g('followup'),updatedBy:currentUserName(), updatedAt:Date.now()
   };
   if(modalVerifiedAvatar) rec.avatar=modalVerifiedAvatar;
   let saved;
@@ -1230,7 +1417,7 @@ function recoCard(o){ // o: 통합 후보 객체
     const rec={ id:genId(), name:o.name, handle:o.handle||'', platform:o.platform, category:(o.category||recoState.cat||'기타'),
       tier:o.tier||'', followers:o.followers||'', profileUrl:o.url||'', resultUrl:o.url||'', email:o.email||'',
       contactMethod:o.email?'이메일':'', status:'미접촉', avatar:o.thumb||(avatarCache[ytChannelId(o.url)]||''),
-      proposedRate:'',agreedRate:'',contentType:'',schedule:'',engagement:'', memo:o.desc||o.note||'', updatedAt:Date.now() };
+      proposedRate:'',agreedRate:'',contentType:'',schedule:'',engagement:'', memo:o.desc||o.note||'', updatedBy:currentUserName(), updatedAt:Date.now() };
     data.unshift(rec); save(); sbUpsert(rec); render();
     const btn=ev.currentTarget; btn.textContent='✓ 추가됨'; btn.classList.remove('primary'); btn.disabled=true;
     toast(`＋ ${o.name} 목록에 추가`);
@@ -1385,7 +1572,7 @@ async function qaAdd(){
   const rec={ id:genId(), name: v.name||name||handle.replace(/^@/,''), handle: v.handle||handle,
     platform, category:$('#qa_category').value,
     tier:v.tier||'', followers:v.followers||'', profileUrl:v.url||url, resultUrl:v.url||url, email:'', contactMethod:'', status:'미접촉',
-    avatar:v.avatar||'', proposedRate:'', agreedRate:'', contentType:'', schedule:'', engagement:'', memo:'', updatedAt:Date.now() };
+    avatar:v.avatar||'', proposedRate:'', agreedRate:'', contentType:'', schedule:'', engagement:'', memo:'', updatedBy:currentUserName(), updatedAt:Date.now() };
   data.unshift(rec); save(); sbUpsert(rec);
   $('#qa_input').value=''; $('#qa_name').value=''; $('#qa_platform').value='Instagram';
   delete $('#qa_input').dataset.handle; delete $('#qa_input').dataset.url;
@@ -1506,7 +1693,7 @@ function renderYt(){
           category:lastSearchCat||'기타', tier:tierFromSubs(st.subscriberCount),
           followers:(subs&&subs!=='비공개')?subs:'', profileUrl:url, resultUrl:url, email:'', contactMethod:'',
           status:'미접촉', avatar:thumb||'', proposedRate:'',agreedRate:'',contentType:'',schedule:'',engagement:'',
-          memo:(c.snippet.description||'').slice(0,140), updatedAt:Date.now() };
+          memo:(c.snippet.description||'').slice(0,140), updatedBy:currentUserName(), updatedAt:Date.now() };
         data.unshift(rec); save(); sbUpsert(rec); render();
         const btn=ev.currentTarget; btn.textContent='✓ 추가됨'; btn.classList.remove('primary'); btn.disabled=true;
         toast(`＋ ${rec.name} 목록에 추가`);
@@ -1529,23 +1716,26 @@ function init(){
   window.addEventListener('online', ()=>{ if(sbConfig && !sbLive) sbConnect(sbConfig, true); });
   window.addEventListener('offline', ()=>{ sbLive=false; setTeamLabel(); });
   initFilters(); loadTpl(); load(); render();
-  // 저장된 팀 연결(없으면 기본 내장 설정)로 자동 연결
-  const optedOut = localStorage.getItem('sb_disabled')==='1';
-  sbConfig = loadSbConfig() || (optedOut ? null : SB_DEFAULT);
-  setTeamLabel();
-  if(sbConfig && sbConfig.url && sbConfig.key){
-    const tryConnect=()=>{ if(window.supabase) sbConnect(sbConfig,true); else setTimeout(tryConnect,300); };
-    tryConnect();
-  }
+  // 로그인 게이트: 인증 후에만 데이터 연결
+  showGate('loading');
+  const startAuth=()=>{ if(window.supabase){ ensureClient(); routeAuth();
+      sb.auth.onAuthStateChange((ev)=>{ if(ev==='SIGNED_OUT'){ showGate('login'); } }); }
+    else setTimeout(startAuth,300); };
+  startAuth();
+  // 인증 화면 이벤트
+  $('#tabLogin').onclick=()=>showGate('login');
+  $('#tabSignup').onclick=()=>showGate('signup');
+  $('#au_submit').onclick=doAuthSubmit;
+  $('#au_pw').addEventListener('keydown',e=>{ if(e.key==='Enter') doAuthSubmit(); });
+  $('#au_user').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#au_pw').focus(); });
+  $('#pendRefresh').onclick=routeAuth;
+  $('#pendLogout').onclick=doLogout;
+  $('#btnUser').onclick=()=>{ if(confirm('로그아웃할까요?')) doLogout(); };
+  $('#btnAdmin').onclick=openAdmin;
+  $('#adminClose').onclick=()=>$('#adminOverlay').classList.remove('show');
+  $('#adminRefresh').onclick=renderAdminList;
+  $('#adminOverlay').onclick=e=>{ if(e.target===$('#adminOverlay')) $('#adminOverlay').classList.remove('show'); };
   $('#btnAdd').onclick=openSearch;
-  $('#btnTeam').onclick=openTeam;
-  $('#teamClose').onclick=()=>$('#teamOverlay').classList.remove('show');
-  $('#teamOverlay').onclick=e=>{ if(e.target===$('#teamOverlay')) $('#teamOverlay').classList.remove('show'); };
-  $('#sbConnect').onclick=()=>{ const url=$('#sb_url').value.trim(), key=$('#sb_key').value.trim();
-    if(!url||!key){ toast('URL과 anon key를 입력해 주세요'); return; } sbConnect({url,key}); };
-  $('#sbDisconnect').onclick=sbDisconnect;
-  $('#sbCopySql').onclick=()=>{ $('#sbSql').select(); try{document.execCommand('copy');}catch(e){}
-    navigator.clipboard&&navigator.clipboard.writeText(SB_SETUP_SQL); toast('SQL을 복사했어요'); };
   $('#btnSearch').onclick=openSearch;
   $('#searchClose').onclick=closeSearch;
   $('#ytSearchBtn').onclick=()=>{ recoState.token++; recoState.shown=12; renderReco(true); };
