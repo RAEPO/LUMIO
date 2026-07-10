@@ -6,23 +6,43 @@
 <title>인플루언서 섭외 보드 · Viral Outreach</title>
 <style>
   :root{
+    /* 다크 모드 (기본) */
     --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
     --txt:#e8eaed; --muted:#9aa2af; --faint:#6b7280;
     --brand:#7c5cff; --brand2:#5b8cff;
     --c-nocontact:#6b7280; --c-contact:#3b82f6; --c-nego:#f59e0b;
     --c-confirm:#22c55e; --c-done:#14b8a6; --c-reject:#ef4444;
     --radius:14px; --shadow:0 6px 24px rgba(0,0,0,.35);
+    --bg-grad-top:#0d0f14; --bg-grad-bot:#0f1115;
+    --surface-blur:rgba(15,17,21,.85); --hover:#252a34; --line-strong:#3a4150; --scroll:#2a2f3a; --scroll-h:#3a4150;
     --beauty:#ff6ba6;--fashion:#c084fc;--food:#fb923c;--travel:#38bdf8;
     --tech:#60a5fa;--game:#a78bfa;--money:#34d399;--fitness:#f43f5e;
     --kids:#fbbf24;--pet:#2dd4bf;--etc:#94a3b8;
     --interior:#84cc16;--selfdev:#06b6d4;--comedy:#fb7185;--knowledge:#818cf8;
     --vlog:#e879f9;--car:#f97316;--music:#db2777;--sports:#10b981;
   }
+  html[data-theme="light"]{
+    /* 라이트(일반) 모드 */
+    --bg:#f4f5f7; --panel:#ffffff; --panel2:#f0f2f5; --line:#e2e5ea;
+    --txt:#1a1d23; --muted:#5f6673; --faint:#98a0ad;
+    --brand:#6d4bff; --brand2:#3b6fe0;
+    --c-nocontact:#94a3b8; --c-contact:#3b82f6; --c-nego:#e08a00;
+    --c-confirm:#16a34a; --c-done:#0d9488; --c-reject:#e11d48;
+    --shadow:0 6px 24px rgba(20,30,55,.12);
+    --bg-grad-top:#eef0f4; --bg-grad-bot:#f4f5f7;
+    --surface-blur:rgba(255,255,255,.82); --hover:#e9edf3; --line-strong:#cbd2dc; --scroll:#cbd2dc; --scroll-h:#aeb7c4;
+    --beauty:#e84c8f;--fashion:#a855f7;--food:#ea7a1e;--travel:#0ea5e9;
+    --tech:#3b82f6;--game:#8b5cf6;--money:#10b981;--fitness:#e11d48;
+    --kids:#e0a800;--pet:#0d9488;--etc:#64748b;
+    --interior:#65a30d;--selfdev:#0891b2;--comedy:#e11d48;--knowledge:#6366f1;
+    --vlog:#c026d3;--car:#ea580c;--music:#be1873;--sports:#059669;
+  }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
     font-family:'Pretendard','Apple SD Gothic Neo','Segoe UI',system-ui,-apple-system,sans-serif;
-    background:linear-gradient(180deg,#0d0f14,#0f1115 240px);color:var(--txt);
+    background:linear-gradient(180deg,var(--bg-grad-top),var(--bg-grad-bot) 240px);color:var(--txt);
+    transition:background .2s,color .2s;
     -webkit-font-smoothing:antialiased;
   }
   a{color:var(--brand2);text-decoration:none}
@@ -32,7 +52,7 @@
 
   header.top{
     padding:18px 24px 14px;border-bottom:1px solid var(--line);
-    background:rgba(15,17,21,.85);backdrop-filter:blur(8px);
+    background:var(--surface-blur);backdrop-filter:blur(8px);
     position:sticky;top:0;z-index:40;
   }
   .top-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -46,7 +66,7 @@
   .btn{padding:9px 14px;border-radius:10px;font-size:13.5px;font-weight:600;
     background:var(--panel2);border:1px solid var(--line);color:var(--txt);
     display:inline-flex;align-items:center;gap:7px;transition:.15s}
-  .btn:hover{background:#252a34;border-color:#3a4150}
+  .btn:hover{background:var(--hover);border-color:var(--line-strong)}
   .btn.primary{background:linear-gradient(135deg,var(--brand),var(--brand2));border:none;color:#fff}
   .btn.primary:hover{filter:brightness(1.08)}
   .btn.sm{padding:6px 10px;font-size:12.5px}
@@ -60,7 +80,7 @@
 
   .filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
     padding:14px 24px;border-bottom:1px solid var(--line);position:sticky;top:74px;
-    background:rgba(15,17,21,.8);backdrop-filter:blur(8px);z-index:30}
+    background:var(--surface-blur);backdrop-filter:blur(8px);z-index:30}
   .search{position:relative;flex:1;min-width:200px;max-width:340px}
   .search input{width:100%;padding:9px 12px 9px 34px;border-radius:10px;
     background:var(--panel);border:1px solid var(--line);color:var(--txt);font-size:13.5px}
@@ -96,7 +116,7 @@
 
   .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;
     padding:12px;cursor:grab;transition:.15s;position:relative}
-  .card:hover{border-color:#3a4150;transform:translateY(-1px)}
+  .card:hover{border-color:var(--line-strong);transform:translateY(-1px)}
   .card:active{cursor:grabbing}
   .card .ctop{display:flex;align-items:center;gap:9px}
   .avatar{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
@@ -162,8 +182,8 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .hidden{display:none!important}
   ::-webkit-scrollbar{width:10px;height:10px}
-  ::-webkit-scrollbar-thumb{background:#2a2f3a;border-radius:10px}
-  ::-webkit-scrollbar-thumb:hover{background:#3a4150}
+  ::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:10px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--scroll-h)}
 
   /* Directory */
   .dir-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
@@ -172,7 +192,7 @@
   .dir-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
   .dcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px;
     display:flex;flex-direction:column;gap:10px;transition:.15s;position:relative}
-  .dcard:hover{border-color:#3a4150}
+  .dcard:hover{border-color:var(--line-strong)}
   .dcard.picked{border-color:var(--c-confirm);background:linear-gradient(180deg,rgba(34,197,94,.07),var(--panel))}
   .dcard .dtop{display:flex;align-items:center;gap:10px;cursor:pointer}
   .dcard .nm{font-weight:700;font-size:14px;line-height:1.2}
@@ -195,7 +215,7 @@
   .due.today{background:rgba(245,158,11,.22);color:#fbbf24}
   .due.soon{background:rgba(59,130,246,.16);color:#60a5fa}
   .stat.clickable{cursor:pointer;transition:.15s}
-  .stat.clickable:hover{border-color:#3a4150}
+  .stat.clickable:hover{border-color:var(--line-strong)}
   .stat.clickable.on{border-color:var(--c-nego);background:rgba(245,158,11,.07)}
 
   /* Stats view */
@@ -221,7 +241,7 @@
   .plat-links a,.plat-links button{padding:9px 13px;border-radius:10px;font-size:13px;font-weight:600;
     border:1px solid var(--line);background:var(--panel2);color:var(--txt);
     display:inline-flex;gap:7px;align-items:center;transition:.15s}
-  .plat-links a:hover,.plat-links button:hover{border-color:var(--brand);text-decoration:none;background:#252a34}
+  .plat-links a:hover,.plat-links button:hover{border-color:var(--brand);text-decoration:none;background:var(--hover)}
   .yt-result{display:flex;gap:11px;align-items:center;padding:9px 10px;border:1px solid var(--line);
     border-radius:11px;background:var(--panel2)}
   .yt-result img{width:44px;height:44px;border-radius:50%;flex:0 0 44px;background:var(--panel);object-fit:cover}
@@ -248,6 +268,7 @@
       </div>
     </div>
     <div class="spacer"></div>
+    <button class="btn" id="btnTheme" title="화면 모드 전환" style="min-width:42px;justify-content:center">☀️</button>
     <button class="btn" id="btnTeam">👥 <span id="teamLabel">팀 연결</span></button>
     <button class="btn" id="btnTpl">✉️ 템플릿</button>
     <button class="btn" id="btnSearch">🔍 인플루언서 검색</button>
@@ -499,6 +520,16 @@ function load(){
   try{ const raw=localStorage.getItem(LS_KEY); if(raw) stored=JSON.parse(raw); }catch(e){}
   data = Array.isArray(stored) ? stored : [];   // 기본은 빈 목록 — 검색·추천으로 추가
 }
+/* ---------- 화면 모드 (라이트/다크) ---------- */
+function applyTheme(t){
+  const light = t==='light';
+  document.documentElement.setAttribute('data-theme', light?'light':'dark');
+  const btn=document.getElementById('btnTheme');
+  if(btn) btn.textContent = light ? '🌙' : '☀️';
+  try{ localStorage.setItem('theme', light?'light':'dark'); }catch(e){}
+}
+function initTheme(){ let t='dark'; try{ t=localStorage.getItem('theme')||'dark'; }catch(e){} applyTheme(t); }
+function toggleTheme(){ const cur=document.documentElement.getAttribute('data-theme')==='light'?'light':'dark'; applyTheme(cur==='light'?'dark':'light'); }
 function save(){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(data)); }catch(e){}
 }
@@ -1451,6 +1482,8 @@ function renderYt(){
 
 /* ---------- Wire up ---------- */
 function init(){
+  initTheme();
+  $('#btnTheme').onclick=toggleTheme;
   initFilters(); loadTpl(); load(); render();
   // 저장된 팀 연결(없으면 기본 내장 설정)로 자동 연결
   const optedOut = localStorage.getItem('sb_disabled')==='1';
