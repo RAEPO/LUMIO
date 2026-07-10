@@ -515,7 +515,7 @@
     </div>
     <div id="authForms">
       <div class="auth-tabs"><button id="tabLogin" class="on">로그인</button><button id="tabSignup">가입 신청</button></div>
-      <div class="auth-field"><label>아이디</label><input id="au_user" autocomplete="username" placeholder="영문·숫자 아이디"></div>
+      <div class="auth-field"><label>아이디 (이름)</label><input id="au_user" autocomplete="username" placeholder="이름 아이디 (한글 가능)"></div>
       <div class="auth-field"><label>비밀번호</label><input id="au_pw" type="password" autocomplete="current-password" placeholder="비밀번호"></div>
       <div class="auth-msg" id="au_msg"></div>
       <button class="btn primary" id="au_submit" style="width:100%;justify-content:center">로그인</button>
@@ -666,7 +666,13 @@ function loadSbConfig(){ try{ return JSON.parse(localStorage.getItem('sb_config'
 /* ================= 로그인 · 승인 시스템 ================= */
 const AUTH_DOMAIN='@lumio.app';                 // 아이디를 내부적으로 이메일로 매핑
 let authUser=null, authMode='login';
-const uname2email=u=>u.trim().toLowerCase()+AUTH_DOMAIN;
+// 한글 아이디도 유효한 이메일로: UTF-8 바이트를 hex로 인코딩(로그인·가입 동일하게 매핑됨)
+function uname2email(u){
+  const s=(u||'').trim().toLowerCase();
+  let hex=''; const bytes=new TextEncoder().encode(s);
+  for(const b of bytes) hex+=b.toString(16).padStart(2,'0');
+  return 'u'+hex+AUTH_DOMAIN;
+}
 function ensureClient(){ if(!sb && window.supabase) sb=window.supabase.createClient(SB_DEFAULT.url, SB_DEFAULT.key); return sb; }
 function currentUserName(){ return authUser?authUser.username:''; }
 function showGate(mode){ // 'login' | 'signup' | 'pending' | 'loading' | 'off'
@@ -683,7 +689,7 @@ function showGate(mode){ // 'login' | 'signup' | 'pending' | 'loading' | 'off'
     $('#au_pw').setAttribute('autocomplete', mode==='login'?'current-password':'new-password');
     $('#au_hint').innerHTML = mode==='login'
       ? '처음이면 <b>가입 신청</b> 후 관리자 승인을 받아주세요.'
-      : '아이디는 영문·숫자 3~20자. 가입 후 관리자가 승인하면 이용할 수 있어요.';
+      : '아이디는 <b>이름</b>으로 쓰여요(한글 가능, 2~20자). 가입 후 관리자가 승인하면 이용할 수 있어요.';
     $('#au_msg').textContent='';
   }
 }
@@ -716,7 +722,7 @@ async function doAuthSubmit(){
   const btn=$('#au_submit'); const old=btn.textContent; btn.disabled=true; btn.textContent='처리 중…';
   try{
     if(authMode==='signup'){
-      if(!/^[a-zA-Z0-9._-]{3,20}$/.test(u)){ msg.style.color='#f87171'; msg.textContent='아이디는 영문·숫자 3~20자예요'; return; }
+      if(!/^[0-9A-Za-z가-힣ㄱ-ㅎㅏ-ㅣ._\-]{2,20}$/.test(u)){ msg.style.color='#f87171'; msg.textContent='아이디는 한글·영문·숫자 2~20자, 공백 없이 입력해 주세요'; return; }
       if(pw.length<6){ msg.style.color='#f87171'; msg.textContent='비밀번호는 6자 이상이어야 해요'; return; }
       const { error }=await sb.auth.signUp({ email:uname2email(u), password:pw, options:{ data:{ username:u } } });
       if(error){ msg.style.color='#f87171'; msg.textContent = /registered|exists/i.test(error.message)?'이미 사용 중인 아이디예요':('가입 실패: '+error.message); return; }
