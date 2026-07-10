@@ -332,7 +332,7 @@
     <div class="spacer"></div>
     <button class="btn ico" id="btnTheme" title="화면 모드 전환"></button>
     <button class="btn hidden" id="btnAdmin" title="가입 승인 관리"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 11 2 2 4-4"/></svg>승인 관리</button>
-    <button class="btn" id="btnUser" title="로그아웃"><span class="user-chip"><span class="cdot" id="connDot"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span id="userLabel">-</span></span></button>
+    <button class="btn" id="btnUser" title="내 계정 · 로그아웃"><span class="user-chip"><span class="cdot" id="connDot"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span id="userLabel">-</span></span></button>
     <button class="btn" id="btnTpl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>템플릿</button>
     <button class="btn" id="btnSearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>인플루언서 검색</button>
     <button class="btn primary" id="btnAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>인플루언서 추가</button>
@@ -614,6 +614,37 @@
   </div>
 </div>
 
+<!-- 내 계정 -->
+<div class="overlay" id="acctOverlay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div class="avatar" id="acctAvatar" style="background:var(--brand)">?</div>
+      <h2>내 계정</h2>
+    </div>
+    <div class="modal-body">
+      <div class="section-t">🧑 내 정보</div>
+      <div class="field"><label>이름 (아이디)</label><input id="ac_user" placeholder="이름 아이디 (한글 가능, 2~20자)"></div>
+      <div class="keyhint">이름을 바꾸면 로그인 아이디도 함께 바뀌어요. 다음 로그인부터 새 이름으로 로그인하세요.</div>
+
+      <div class="section-t" style="margin-top:16px">🔒 비밀번호 변경</div>
+      <div class="keyhint" style="margin-bottom:8px">바꾸지 않으려면 비워 두세요.</div>
+      <div class="field"><label>새 비밀번호</label><input id="ac_pw1" type="password" autocomplete="new-password" placeholder="6자 이상"></div>
+      <div class="field"><label>새 비밀번호 확인</label><input id="ac_pw2" type="password" autocomplete="new-password" placeholder="한 번 더 입력"></div>
+
+      <div class="section-t" style="margin-top:16px">✅ 본인 확인</div>
+      <div class="keyhint" style="margin-bottom:8px">이름·비밀번호를 바꾸려면 <b>현재 비밀번호</b>를 입력해 주세요.</div>
+      <div class="field"><label>현재 비밀번호</label><input id="ac_pwcur" type="password" autocomplete="current-password" placeholder="현재 비밀번호"></div>
+      <div id="ac_msg" class="keyhint" style="margin-top:6px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn del" id="ac_logout">로그아웃</button>
+      <div class="spacer"></div>
+      <button class="btn" id="ac_cancel">취소</button>
+      <button class="btn primary" id="ac_save">변경 저장</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -837,6 +868,69 @@ async function renderAdminList(){
     row.appendChild(btn);
     box.appendChild(row);
   });
+}
+
+/* ---- 내 계정: 정보/비밀번호 변경 ---- */
+function openAccount(){
+  if(!authUser){ return; }
+  $('#ac_user').value=authUser.username||'';
+  $('#ac_pw1').value=''; $('#ac_pw2').value=''; $('#ac_pwcur').value='';
+  const msg=$('#ac_msg'); msg.textContent=''; msg.style.color='var(--faint)';
+  const av=$('#acctAvatar'); av.textContent=esc((authUser.username||'?').slice(0,2)); av.style.background='var(--brand)';
+  $('#acctOverlay').classList.add('show');
+  setTimeout(()=>$('#ac_pwcur').focus(),50);
+}
+function closeAccount(){ $('#acctOverlay').classList.remove('show'); }
+async function saveAccount(){
+  const msg=$('#ac_msg');
+  const setMsg=(t,c)=>{ msg.textContent=t; msg.style.color=c||'#f87171'; };
+  const newName=$('#ac_user').value.trim();
+  const pw1=$('#ac_pw1').value, pw2=$('#ac_pw2').value, cur=$('#ac_pwcur').value;
+  const nameChanged = newName && newName!==authUser.username;
+  const pwChanged = !!pw1;
+  if(!nameChanged && !pwChanged){ setMsg('변경할 내용이 없어요. 이름을 바꾸거나 새 비밀번호를 입력해 주세요.','#fbbf24'); return; }
+  // 유효성
+  if(nameChanged && !/^[0-9A-Za-z가-힣ㄱ-ㅎㅏ-ㅣ._\-]{2,20}$/.test(newName)){ setMsg('이름은 한글·영문·숫자 2~20자, 공백 없이 입력해 주세요.'); return; }
+  if(pwChanged){
+    if(pw1.length<6){ setMsg('새 비밀번호는 6자 이상이어야 해요.'); return; }
+    if(pw1!==pw2){ setMsg('새 비밀번호 확인이 일치하지 않아요.'); return; }
+  }
+  if(!cur){ setMsg('본인 확인을 위해 현재 비밀번호를 입력해 주세요.'); return; }
+  const btn=$('#ac_save'), old=btn.textContent; btn.disabled=true; btn.textContent='변경 중…';
+  try{
+    ensureClient();
+    // 1) 현재 비밀번호로 본인 확인
+    const chk=await sb.auth.signInWithPassword({ email:uname2email(authUser.username), password:cur });
+    if(chk.error){ setMsg('현재 비밀번호가 올바르지 않아요.'); return; }
+    // 2) 이름(아이디) 변경 → 로그인 이메일도 함께 갱신
+    if(nameChanged){
+      const up=await sb.auth.updateUser({ email:uname2email(newName), data:{ username:newName } });
+      if(up.error){
+        setMsg(/registered|exists|already/i.test(up.error.message)?'이미 사용 중인 이름이에요.':('이름 변경 실패: '+up.error.message));
+        return;
+      }
+      // 프로필 username 갱신: 보안 함수(set_username) 우선, 없으면 직접 업데이트로 폴백
+      let prErr=null;
+      const rpc=await sb.rpc('set_username',{ new_name:newName });
+      if(rpc.error){
+        const pr=await sb.from('profiles').update({ username:newName }).eq('id', authUser.id);
+        prErr=pr.error;
+      }
+      if(prErr){ setMsg('로그인 이름은 바뀌었지만 표시 이름 반영에 실패했어요. 관리자에게 set_username 설정을 요청하세요.','#fbbf24'); }
+      authUser.username=newName;
+    }
+    // 3) 비밀번호 변경
+    if(pwChanged){
+      const up2=await sb.auth.updateUser({ password:pw1 });
+      if(up2.error){ setMsg('비밀번호 변경 실패: '+up2.error.message); return; }
+    }
+    // 반영
+    $('#userLabel').textContent=authUser.username;
+    render();
+    closeAccount();
+    toast(nameChanged&&pwChanged?'이름과 비밀번호를 변경했어요':(nameChanged?'이름을 변경했어요':'비밀번호를 변경했어요'));
+  }catch(e){ setMsg('오류가 발생했어요. 잠시 후 다시 시도해 주세요.'); }
+  finally{ btn.disabled=false; btn.textContent=old; }
 }
 function setTeamLabel(){
   const dot=$('#connDot'); if(!dot) return;
@@ -1935,7 +2029,12 @@ function init(){
   $('#au_user').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#au_pw').focus(); });
   $('#pendRefresh').onclick=routeAuth;
   $('#pendLogout').onclick=doLogout;
-  $('#btnUser').onclick=()=>{ if(confirm('로그아웃할까요?')) doLogout(); };
+  $('#btnUser').onclick=openAccount;
+  $('#ac_cancel').onclick=closeAccount;
+  $('#ac_save').onclick=saveAccount;
+  $('#ac_logout').onclick=()=>{ if(confirm('로그아웃할까요?')){ closeAccount(); doLogout(); } };
+  $('#ac_pwcur').addEventListener('keydown',e=>{ if(e.key==='Enter') saveAccount(); });
+  $('#acctOverlay').onclick=e=>{ if(e.target===$('#acctOverlay')) closeAccount(); };
   $('#btnAdmin').onclick=openAdmin;
   $('#adminClose').onclick=()=>$('#adminOverlay').classList.remove('show');
   $('#adminRefresh').onclick=renderAdminList;
@@ -2001,7 +2100,7 @@ function init(){
   $('#bulkStar').onclick=bulkStar;
   $('#bulkDelete').onclick=bulkDelete;
   $('#bulkClear').onclick=()=>setSelectMode(false);
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); closeSearch(); closeTpl(); $('#teamOverlay').classList.remove('show'); if(selectMode) setSelectMode(false); } });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); closeSearch(); closeTpl(); closeAccount(); $('#teamOverlay').classList.remove('show'); if(selectMode) setSelectMode(false); } });
 }
 init();
 </script>
