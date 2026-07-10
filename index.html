@@ -341,7 +341,9 @@
     </div>
     <div class="modal-foot">
       <button class="btn del hidden" id="btnDelete">🗑 삭제</button>
+      <span id="verifyStatus" class="keyhint"></span>
       <div class="spacer"></div>
+      <button class="btn" id="btnVerify">🔍 계정 확인</button>
       <button class="btn" id="btnCancel">취소</button>
       <button class="btn primary" id="btnSave">저장</button>
     </div>
@@ -875,6 +877,8 @@ function openEdit(id, prefill){
   $('#mTitle').textContent = id ? '인플루언서 편집' : '인플루언서 추가';
   $('#mAvatar').innerHTML = esc(initials(d.name||'?')) + avatarImgTag(avatarSrc(d));
   $('#mAvatar').style.background = catColor(d.category||'기타');
+  modalVerifiedAvatar = d.avatar||'';
+  $('#verifyStatus').innerHTML = id ? '' : '<span style="color:var(--muted)">신규 등록 시 실제 계정 확인</span>';
   const set=(k,v)=>$('#f_'+k).value = d[k]!=null?d[k]:(v||'');
   set('name');set('handle');set('followers');set('profileUrl');set('email');
   set('proposedRate');set('agreedRate');set('contentType');set('schedule');
@@ -892,9 +896,39 @@ function openEdit(id, prefill){
   $('#overlay').classList.add('show');
 }
 function closeModal(){ $('#overlay').classList.remove('show'); editingId=null; }
-function saveModal(){
+async function verifyFromModal(silent){
+  const platform=$('#f_platform').value, handle=$('#f_handle').value.trim(), url=$('#f_profileUrl').value.trim();
+  const st=$('#verifyStatus');
+  if(!handle && !url){ if(!silent){ st.innerHTML='<span style="color:#fbbf24">핸들이나 프로필 링크를 먼저 입력해 주세요</span>'; } return {ok:false, empty:true}; }
+  st.innerHTML='<span style="color:var(--muted)">확인 중…</span>';
+  const v=await verifyAccount(platform, handle, url);
+  if(v.ok){
+    if(v.name && !$('#f_name').value.trim()) $('#f_name').value=v.name;
+    if(v.followers && !$('#f_followers').value.trim()) $('#f_followers').value=v.followers;
+    if(v.tier && !$('#f_tier').value) $('#f_tier').value=v.tier;
+    if(v.url && !$('#f_profileUrl').value.trim()) $('#f_profileUrl').value=v.url;
+    modalVerifiedAvatar=v.avatar||'';
+    $('#mAvatar').innerHTML=esc(initials($('#f_name').value||'?'))+avatarImgTag(v.avatar||avatarFor(platform,handle,url));
+    st.innerHTML='<span style="color:#3ecf8e">✅ 실제 계정 확인됨</span>';
+  } else {
+    st.innerHTML='<span style="color:#f87171">❌ 확인 실패</span>';
+  }
+  return v;
+}
+let modalVerifiedAvatar='';
+async function saveModal(){
   const g=k=>$('#f_'+k).value.trim();
   if(!g('name')){ toast('이름을 입력해 주세요'); $('#f_name').focus(); return; }
+  // 신규 등록은 실제 계정 검증
+  if(!editingId){
+    if(!g('handle') && !g('profileUrl')){ toast('실제 계정의 @핸들 또는 프로필 링크를 입력해 주세요'); $('#f_handle').focus(); return; }
+    const btn=$('#btnSave'), old=btn.textContent; btn.disabled=true; btn.textContent='확인 중…';
+    const v=await verifyFromModal(true);
+    btn.disabled=false; btn.textContent=old;
+    if(!v.ok){
+      if(!confirm(`${v.reason||'실제 계정을 확인하지 못했어요.'}\n\n실제 존재하는 계정만 등록하는 게 원칙이에요.\n확인 없이 그래도 저장할까요?`)) return;
+    }
+  }
   const rec={
     name:g('name'),handle:g('handle'),platform:g('platform'),category:g('category'),
     tier:g('tier'),followers:g('followers'),profileUrl:g('profileUrl'),email:g('email'),
@@ -903,6 +937,7 @@ function saveModal(){
     engagement:g('engagement'),resultUrl:g('resultUrl'),memo:g('memo'),
     assignee:g('assignee'),followup:g('followup'),updatedAt:Date.now()
   };
+  if(modalVerifiedAvatar) rec.avatar=modalVerifiedAvatar;
   let saved;
   if(editingId){ saved=data.find(x=>x.id===editingId); Object.assign(saved,rec); toast('저장했어요'); }
   else{ rec.id=genId(); rec.inPipeline=true; data.unshift(rec); saved=rec; toast('섭외 목록에 추가했어요'); }
@@ -1196,25 +1231,84 @@ function qaPreview(){
   box.style.background=src?'var(--panel2)':'var(--brand)';
   box.innerHTML=esc((nm||'?').slice(0,2))+(src?`<img src="${esc(src)}" referrerpolicy="no-referrer" onerror="this.remove()">`:'');
 }
-function qaAdd(){
+async function qaAdd(){
   const raw=$('#qa_input').value.trim();
-  const name=$('#qa_name').value.trim() || (raw && !/^https?:/i.test(raw) ? raw.replace(/^@/,'') : '');
-  if(!name){ toast('이름 또는 링크를 입력해 주세요'); $('#qa_input').focus(); return; }
+  let name=$('#qa_name').value.trim() || (raw && !/^https?:/i.test(raw) ? raw.replace(/^@/,'') : '');
   let handle=$('#qa_input').dataset.handle||'', url=$('#qa_input').dataset.url||'';
   if(!handle && raw && !/^https?:/i.test(raw)) handle=raw;
   if(!url && /^https?:\/\//i.test(raw)) url=raw;
-  const rec={ id:genId(), name, handle, platform:$('#qa_platform').value, category:$('#qa_category').value,
-    tier:'', followers:'', profileUrl:url, resultUrl:url, email:'', contactMethod:'', status:'미접촉',
-    avatar:'', proposedRate:'', agreedRate:'', contentType:'', schedule:'', engagement:'', memo:'', updatedAt:Date.now() };
+  const platform=$('#qa_platform').value;
+  if(!name && !handle && !url){ toast('이름 또는 링크를 입력해 주세요'); $('#qa_input').focus(); return; }
+  if(!handle && !url){ toast('실제 계정의 @핸들 또는 프로필 링크를 넣어주세요 (존재 확인용)'); $('#qa_input').focus(); return; }
+  const btn=$('#qaAdd'), old=btn.innerHTML; btn.disabled=true; btn.textContent='실제 계정 확인 중…';
+  const v=await verifyAccount(platform, handle, url);
+  btn.disabled=false; btn.innerHTML=old;
+  if(!v.ok){
+    if(!confirm(`${v.reason}\n\n실제 존재하는 계정만 등록하는 게 원칙이에요.\n확인 없이 그래도 추가할까요?`)) { $('#qa_input').focus(); return; }
+  }
+  const rec={ id:genId(), name: v.name||name||handle.replace(/^@/,''), handle: v.handle||handle,
+    platform, category:$('#qa_category').value,
+    tier:v.tier||'', followers:v.followers||'', profileUrl:v.url||url, resultUrl:v.url||url, email:'', contactMethod:'', status:'미접촉',
+    avatar:v.avatar||'', proposedRate:'', agreedRate:'', contentType:'', schedule:'', engagement:'', memo:'', updatedAt:Date.now() };
   data.unshift(rec); save(); sbUpsert(rec);
   $('#qa_input').value=''; $('#qa_name').value=''; $('#qa_platform').value='Instagram';
   delete $('#qa_input').dataset.handle; delete $('#qa_input').dataset.url;
   qaPreview();
-  render(); toast(`＋ ${name} 목록에 추가`); $('#qa_input').focus();
+  render(); toast((v.ok?'✅ 확인됨 · ':'')+`＋ ${rec.name} 목록에 추가`); $('#qa_input').focus();
 }
 function closeSearch(){ $('#searchOverlay').classList.remove('show'); }
 function fmtCount(n){ n=+n; if(!n) return ''; if(n>=1e8) return '약 '+(n/1e8).toFixed(1).replace(/\.0$/,'')+'억'; if(n>=1e4) return '약 '+Math.round(n/1e4)+'만'; return n.toLocaleString(); }
 function tierFromSubs(n){ n=+n; if(n>=1e6) return '메가'; if(n>=1e5) return '미드'; if(n>=1e4) return '마이크로'; return '나노'; }
+
+/* ---------- 실제 계정 검증 (존재하지 않는 인플루언서 등록 방지) ---------- */
+function getYtKey(){ try{ return localStorage.getItem('yt_api_key')||''; }catch(e){ return ''; } }
+// 프로필 이미지가 실제로 존재하는지로 계정 존재를 판별(unavatar fallback=false → 없으면 404)
+function imgExists(src, timeout=7000){
+  return new Promise(res=>{
+    if(!src){ res(false); return; }
+    const img=new Image(); let done=false;
+    const t=setTimeout(()=>{ if(!done){ done=true; res(false); } }, timeout);
+    img.onload=()=>{ if(!done){ done=true; clearTimeout(t); res(img.naturalWidth>1); } };
+    img.onerror=()=>{ if(!done){ done=true; clearTimeout(t); res(false); } };
+    img.referrerPolicy='no-referrer'; img.src=src;
+  });
+}
+// 유튜브 API로 채널 존재를 정확히 확인(핸들/채널ID/이름 순)
+async function ytResolve(handle, url, key){
+  const base='https://www.googleapis.com/youtube/v3/';
+  const cid=ytChannelId(url);
+  const at=ytHandleFromUrl(url) || (/^@/.test(handle||'') ? handle.replace(/^@/,'') : '');
+  let idParam='';
+  try{
+    if(cid){ idParam='id='+cid; }
+    else if(at){ idParam='forHandle='+encodeURIComponent(at); }
+    else {
+      const q=(handle||'').trim(); if(!q) return null;
+      const s=await fetch(`${base}search?part=snippet&type=channel&maxResults=1&regionCode=KR&q=${encodeURIComponent(q)}&key=${encodeURIComponent(key)}`);
+      const sd=await s.json(); const chId=sd.items&&sd.items[0]&&sd.items[0].id&&sd.items[0].id.channelId;
+      if(!chId) return null; idParam='id='+chId;
+    }
+    const r=await fetch(`${base}channels?part=snippet,statistics&${idParam}&key=${encodeURIComponent(key)}`);
+    const d=await r.json(); const c=d.items&&d.items[0]; if(!c) return null;
+    const st=c.statistics||{};
+    return { name:c.snippet.title, avatar:(c.snippet.thumbnails&&(c.snippet.thumbnails.default||{}).url)||'',
+      followers: st.hiddenSubscriberCount?'':fmtCount(st.subscriberCount),
+      tier: st.hiddenSubscriberCount?'':tierFromSubs(st.subscriberCount),
+      url:'https://www.youtube.com/channel/'+c.id, handle:c.snippet.customUrl||('@'+at)||'' };
+  }catch(e){ return null; }
+}
+// {ok, reason?, name?, avatar?, followers?, tier?, url?, handle?}
+async function verifyAccount(platform, handle, url){
+  const key=getYtKey();
+  if(platform==='YouTube' && key){
+    const y=await ytResolve(handle, url, key);
+    if(y) return {ok:true, ...y};
+    return {ok:false, reason:'유튜브에서 해당 채널을 찾지 못했어요.'};
+  }
+  const src=avatarFor(platform, handle, url);
+  if(src && await imgExists(src)) return {ok:true, avatar:src};
+  return {ok:false, reason:'실제 계정을 확인하지 못했어요. 핸들(@아이디)이나 프로필 링크가 정확한지 확인해 주세요.'+(platform==='YouTube'?'\n(유튜브는 검색창 아래 API 키를 넣으면 정확히 확인됩니다.)':'')};
+}
 let ytState={q:'',pageToken:'',items:[],seen:new Set()};
 let lastSearchCat='기타';
 async function ytSearch(more){
@@ -1317,6 +1411,7 @@ function init(){
   $('#sq').addEventListener('input',()=>{ recoState.shown=8; renderReco(); });
   $('#sq').addEventListener('keydown',e=>{ if(e.key==='Enter'){ recoState.shown=8; renderReco(); } });
   $('#btnCancel').onclick=closeModal;
+  $('#btnVerify').onclick=()=>verifyFromModal(false);
   $('#btnSave').onclick=saveModal;
   $('#btnDelete').onclick=deleteRec;
   $('#overlay').onclick=e=>{ if(e.target===$('#overlay')) closeModal(); };
