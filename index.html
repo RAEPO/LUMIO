@@ -640,13 +640,28 @@ const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=
 function initials(name){ return (name||'?').trim().slice(0,2); }
 // 핸들 기반 프로필 이미지 URL (unavatar.io — 플랫폼별 아바타를 이미지로 반환)
 const UNAVATAR_PROV={'Instagram':'instagram','YouTube':'youtube','틱톡':'tiktok','X (트위터)':'twitter','X':'twitter'};
+const avatarCache={};   // 유튜브 채널ID -> 실제 썸네일(API로 채움)
+function igUser(url){ const m=(url||'').match(/instagram\.com\/([A-Za-z0-9._]+)/i); return m?m[1]:''; }
+function ytHandleFromUrl(url){ const m=(url||'').match(/youtube\.com\/@([A-Za-z0-9._\-]+)/i); return m?m[1]:''; }
+function ytCustomFromUrl(url){ const m=(url||'').match(/youtube\.com\/(?:c|user)\/([A-Za-z0-9._\-]+)/i); return m?m[1]:''; }
+function ytChannelId(url){ const m=(url||'').match(/youtube\.com\/channel\/(UC[A-Za-z0-9_\-]+)/i); return m?m[1]:''; }
 function unavatar(platform, handle){
   const h=(handle||'').replace(/^@/,'').trim();
   const prov=UNAVATAR_PROV[platform];
-  if(!h || !prov || /\s/.test(h)) return '';   // 공백 포함 채널명 등은 스킵
+  if(!h || !prov || /\s/.test(h) || !/^[A-Za-z0-9._\-]+$/.test(h)) return '';
   return `https://unavatar.io/${prov}/${encodeURIComponent(h)}?fallback=false`;
 }
-function avatarSrc(d){ return d.avatar || unavatar(d.platform, d.handle); }
+// 프로필 URL·핸들에서 최선의 프로필 이미지 URL 추론
+function avatarFor(platform, handle, url){
+  const cid=ytChannelId(url);
+  if(cid && avatarCache[cid]) return avatarCache[cid];         // API로 받은 실제 썸네일
+  const ig=igUser(url); if(ig) return `https://unavatar.io/instagram/${ig}?fallback=false`;
+  const yh=ytHandleFromUrl(url)||ytCustomFromUrl(url);
+  if(yh) return `https://unavatar.io/youtube/${encodeURIComponent(yh)}?fallback=false`;
+  if(cid) return `https://unavatar.io/youtube/${cid}?fallback=false`;
+  return unavatar(platform, handle);
+}
+function avatarSrc(d){ return d.avatar || avatarFor(d.platform, d.handle, d.profileUrl); }
 // 이미지가 로드되면 이니셜 위에 얹히고, 실패하면 제거되어 이니셜이 보임
 function avatarImgTag(src){ return src?`<img src="${esc(src)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:''; }
 function esc(s){ return (s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
@@ -1102,7 +1117,7 @@ function renderReco(){
   pool.slice(0,recoState.shown).forEach(r=>{
     const row=el('div','yt-result');
     const plat = r.platform==='YouTube' ? '<span class="plat yt">YT</span>' : r.platform==='Instagram' ? '<span class="plat ig">IG</span>' : '';
-    const av=unavatar(r.platform,r.handle);
+    const av=avatarFor(r.platform,r.handle,r.url);
     row.innerHTML=`
       <div class="avatar" style="background:${catColor(r.category)};width:44px;height:44px;border-radius:10px;font-size:16px">${esc(initials(r.name))}${avatarImgTag(av)}</div>
       <div class="info">
@@ -1114,7 +1129,7 @@ function renderReco(){
     row.querySelector('.radd').onclick=ev=>{
       const rec={ id:genId(), name:r.name, handle:r.handle, platform:r.platform, category:r.category,
         tier:r.tier, followers:r.followers, profileUrl:r.url, resultUrl:r.url, email:r.email||'',
-        contactMethod:r.email?'이메일':'', status:'미접촉', avatar:'', proposedRate:'',agreedRate:'',
+        contactMethod:r.email?'이메일':'', status:'미접촉', avatar:(avatarCache[ytChannelId(r.url)]||''), proposedRate:'',agreedRate:'',
         contentType:'',schedule:'',engagement:'', memo:r.note||'', updatedAt:Date.now() };
       data.unshift(rec); save(); sbUpsert(rec); render();
       const btn=ev.currentTarget; btn.textContent='✓ 추가됨'; btn.classList.remove('primary'); btn.disabled=true;
@@ -1128,6 +1143,23 @@ function renderReco(){
     more.onclick=()=>{ recoState.shown+=8; renderReco(); };
     box.appendChild(more);
   }
+  enrichRecoAvatars(pool.slice(0,recoState.shown));   // 유튜브 API 키 있으면 실제 썸네일 채우기
+}
+// 유튜브 채널ID만 있는 추천 항목의 실제 프로필 썸네일을 API로 채움(키 있을 때만)
+async function enrichRecoAvatars(vis){
+  const key=($('#ytKey')?$('#ytKey').value.trim():''); if(!key) return;
+  const ids=[...new Set(vis.map(r=>ytChannelId(r.url)).filter(Boolean).filter(id=>!(id in avatarCache)))];
+  if(!ids.length) return;
+  ids.forEach(id=>{ avatarCache[id]=''; });   // 중복 요청 방지 표시
+  let changed=false;
+  for(let i=0;i<ids.length;i+=50){
+    try{
+      const res=await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${ids.slice(i,i+50).join(',')}&key=${encodeURIComponent(key)}`);
+      const d=await res.json();
+      (d.items||[]).forEach(c=>{ const th=c.snippet&&c.snippet.thumbnails&&(c.snippet.thumbnails.default||{}).url; if(th){ avatarCache[c.id]=th; changed=true; } });
+    }catch(e){}
+  }
+  if(changed && $('#searchOverlay').classList.contains('show')) renderReco();
 }
 
 function openSearch(){
