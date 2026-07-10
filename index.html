@@ -141,6 +141,10 @@
   .plat{font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px}
   .plat.ig{background:rgba(255,107,166,.15);color:#ff6ba6}
   .plat.yt{background:rgba(239,68,68,.15);color:#f87171}
+  .card-stage{margin-top:9px;display:none}
+  .card-stage .stagesel{width:100%;padding:6px 8px;border-radius:8px;font-size:12px;font-weight:600;
+    background:var(--panel);border:1px solid var(--line);color:var(--txt);cursor:pointer}
+  @media(max-width:820px), (pointer:coarse){ .card-stage{display:block} .card{cursor:default} }
 
   /* Table */
   .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel)}
@@ -275,10 +279,7 @@
     <button class="btn" id="btnTeam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span id="teamLabel">팀 연결</span></button>
     <button class="btn" id="btnTpl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>템플릿</button>
     <button class="btn" id="btnSearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>인플루언서 검색</button>
-    <button class="btn" id="btnImport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/></svg>가져오기</button>
-    <button class="btn" id="btnExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/></svg>내보내기</button>
     <button class="btn primary" id="btnAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>인플루언서 추가</button>
-    <input type="file" id="fileInput" accept="application/json" class="hidden">
   </div>
   <div class="stats" id="stats"></div>
 </header>
@@ -586,15 +587,20 @@ create policy "team access" on ${SB_TABLE}
 grant all on ${SB_TABLE} to anon, authenticated;
 -- 실시간 반영 켜기
 alter publication supabase_realtime add table ${SB_TABLE};`;
-let sb=null, sbConfig=null, sbChannel=null, sbReady=false, sbApplying=false;
+let sb=null, sbConfig=null, sbChannel=null, sbReady=false, sbApplying=false, sbLive=false, sbReconnectT=null;
 // 팀 기본 연결 정보 (미리 심어둠 — 열자마자 자동 연결)
 const SB_DEFAULT={url:'https://flounlexeycwhdxntbkq.supabase.co', key:'sb_publishable_KSaC_1GaChkU7-kGmyuvUQ_cLO8dJrQ'};
 function loadSbConfig(){ try{ return JSON.parse(localStorage.getItem('sb_config')||'null'); }catch(e){ return null; } }
 function setTeamLabel(){
   const l=$('#teamLabel');
-  if(sbReady){ l.innerHTML='팀 연결됨 <span style="color:#3ecf8e">●</span>'; }
+  if(sbReady && sbLive){ l.innerHTML='팀 연결됨 <span style="color:#3ecf8e">●</span>'; }
+  else if(sbReady && !sbLive){ l.innerHTML='재연결 중 <span style="color:#fbbf24">●</span>'; }
   else if(sbConfig){ l.innerHTML='연결 중…'; }
   else l.textContent='팀 연결';
+}
+function scheduleReconnect(){
+  if(sbReconnectT || !sbConfig) return;
+  sbReconnectT=setTimeout(async()=>{ sbReconnectT=null; if(sbConfig){ await sbConnect(sbConfig, true); } }, 4000);
 }
 async function sbConnect(cfg, silent){
   if(!window.supabase){ if(!silent)toast('Supabase 라이브러리를 불러오지 못했어요(인터넷 확인)'); return false; }
@@ -631,7 +637,10 @@ async function sbConnect(cfg, silent){
         else { const doc=payload.new.doc; const i=data.findIndex(x=>x.id===doc.id);
           if(i>=0) data[i]=doc; else data.unshift(doc); }
         save(); render(); sbApplying=false;
-      }).subscribe();
+      }).subscribe((status)=>{
+        if(status==='SUBSCRIBED'){ sbLive=true; setTeamLabel(); }
+        else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){ sbLive=false; setTeamLabel(); scheduleReconnect(); }
+      });
     setTeamLabel(); renderTeamStatus(); render();
     if(!silent) toast('팀 실시간 공유에 연결됐어요');
     return true;
@@ -643,7 +652,8 @@ async function sbConnect(cfg, silent){
   }
 }
 function sbDisconnect(){
-  if(sbChannel && sb){ sb.removeChannel(sbChannel); } sbChannel=null; sb=null; sbReady=false; sbConfig=null;
+  if(sbReconnectT){ clearTimeout(sbReconnectT); sbReconnectT=null; }
+  if(sbChannel && sb){ sb.removeChannel(sbChannel); } sbChannel=null; sb=null; sbReady=false; sbLive=false; sbConfig=null;
   try{ localStorage.removeItem('sb_config'); localStorage.setItem('sb_disabled','1'); }catch(e){}
   setTeamLabel(); renderTeamStatus(); toast('연결을 해제했어요(로컬 모드)');
 }
@@ -822,14 +832,25 @@ function cardEl(d){
       ${rate?`<span class="rate">💰 ${esc(rate)}</span>`:''}
       ${d.assignee?`<span style="color:var(--brand2);font-weight:700">👤 ${esc(d.assignee)}</span>`:''}
       ${d.contactMethod?`<span>· ${esc(d.contactMethod)}</span>`:''}
+    </div>
+    <div class="card-stage">
+      <select class="stagesel">${STATUSES.map(s=>`<option${s.key===d.status?' selected':''}>${s.key}</option>`).join('')}</select>
     </div>`;
   const rm=el('button','rmx','✕'); rm.title='목록에서 삭제';
   rm.addEventListener('click',e=>{ e.stopPropagation(); removeFromList(d.id); });
   c.appendChild(rm);
+  // 단계 드롭다운 — 터치(모바일)에서도 단계 변경 가능
+  const sel=c.querySelector('.stagesel');
+  sel.addEventListener('click',e=>e.stopPropagation());
+  sel.addEventListener('change',e=>{ e.stopPropagation(); setStatus(d.id, sel.value); });
   c.addEventListener('click',()=>openEdit(d.id));
   c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',d.id);c.style.opacity=.4;});
   c.addEventListener('dragend',()=>{c.style.opacity=1;});
   return c;
+}
+function setStatus(id, status){
+  const d=data.find(x=>x.id===id); if(!d || d.status===status) return;
+  d.status=status; d.updatedAt=Date.now(); save(); sbUpsert(d); render(); toast(`${d.name} → ${status}`);
 }
 
 /* ---------- Board ---------- */
@@ -907,9 +928,11 @@ function renderTable(){
 
 /* ---------- Modal ---------- */
 function fillSelect(sel,opts,val){ sel.innerHTML=opts.map(o=>`<option${o===val?' selected':''}>${o}</option>`).join(''); }
+let editSnapshotUpdatedAt=null;
 function openEdit(id, prefill){
   editingId=id;
   const d = id ? data.find(x=>x.id===id) : (prefill||{});
+  editSnapshotUpdatedAt = id ? (d.updatedAt||0) : null;
   $('#mTitle').textContent = id ? '인플루언서 편집' : '인플루언서 추가';
   $('#mAvatar').innerHTML = esc(initials(d.name||'?')) + avatarImgTag(avatarSrc(d));
   $('#mAvatar').style.background = catColor(d.category||'기타');
@@ -975,7 +998,15 @@ async function saveModal(){
   };
   if(modalVerifiedAvatar) rec.avatar=modalVerifiedAvatar;
   let saved;
-  if(editingId){ saved=data.find(x=>x.id===editingId); Object.assign(saved,rec); toast('저장했어요'); }
+  if(editingId){
+    saved=data.find(x=>x.id===editingId);
+    if(!saved){ toast('이 카드는 다른 팀원이 삭제했어요'); closeModal(); render(); return; }
+    // 동시 편집 감지: 내가 열어둔 사이 다른 팀원이 수정했는지
+    if(editSnapshotUpdatedAt!=null && (saved.updatedAt||0) > editSnapshotUpdatedAt){
+      if(!confirm('내가 편집하는 사이 다른 팀원이 이 카드를 수정했어요.\n내 내용으로 덮어쓸까요?')) return;
+    }
+    Object.assign(saved,rec); toast('저장했어요');
+  }
   else{ rec.id=genId(); rec.inPipeline=true; data.unshift(rec); saved=rec; toast('섭외 목록에 추가했어요'); }
   save(); sbUpsert(saved); closeModal(); render();
 }
@@ -987,25 +1018,6 @@ function deleteRec(){
   }
 }
 
-/* ---------- Export / Import ---------- */
-function exportJSON(){
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='influencer-outreach.json'; a.click();
-  toast('JSON으로 내보냈어요');
-}
-function importJSON(file){
-  const r=new FileReader();
-  r.onload=()=>{
-    try{
-      const arr=JSON.parse(r.result);
-      if(!Array.isArray(arr)) throw 0;
-      arr.forEach(d=>{if(!d.id)d.id=genId();if(!d.status)d.status='미접촉';});
-      data=arr; save(); sbBulkUpsert(arr); render(); toast(`${arr.length}명 불러왔어요`);
-    }catch(e){ toast('파일을 읽을 수 없어요'); }
-  };
-  r.readAsText(file);
-}
 
 /* ---------- Filter select population ---------- */
 function initFilters(){
@@ -1064,6 +1076,8 @@ function renderStatsView(){
   const sumConfirmed=data.filter(d=>d.status==='확정'||d.status==='완료').reduce((s,d)=>s+parseKRW(d.agreedRate||d.proposedRate),0);
   const doneRate=data.length?Math.round(data.filter(d=>['확정','완료'].includes(d.status)).length/data.length*100):0;
   const dueList=data.filter(d=>{const s=followState(d);return s==='over'||s==='today';});
+  const doneList=data.filter(d=>d.status==='완료');
+  const perfList=doneList.filter(d=>d.engagement || (d.resultUrl && d.resultUrl!==d.profileUrl));
 
   wrap.innerHTML=`
   <div class="money-tiles">
@@ -1084,6 +1098,14 @@ function renderStatsView(){
     ${dueList.length?`<div class="panel"><h3>⏰ 팔로업 필요 <span class="sub">${dueList.length}명</span></h3>
       ${dueList.slice(0,8).map(d=>`<div class="bar-row" style="grid-template-columns:1fr auto"><div class="bl">${esc(d.name)} <span style="color:var(--faint)">· ${esc(d.assignee||'담당자 미정')}</span></div><div>${followBadge(d)}</div></div>`).join('')}
       ${dueList.length>8?`<div class="keyhint">외 ${dueList.length-8}명 — 상단 '팔로업 필요' 타일을 눌러 확인</div>`:''}</div>`:''}
+    ${doneList.length?`<div class="panel"><h3>✅ 완료 캠페인 성과 <span class="sub">완료 ${doneList.length}명 · 성과기록 ${perfList.length}명</span></h3>
+      ${doneList.slice(0,10).map(d=>`<div class="bar-row" style="grid-template-columns:1fr auto auto;gap:10px">
+        <div class="bl">${esc(d.name)}${d.engagement?` <span style="color:var(--c-confirm)">· 📊 ${esc(d.engagement)}</span>`:''}</div>
+        <div>${(d.agreedRate||d.proposedRate)?`<span style="color:var(--muted);font-size:11.5px">${esc(d.agreedRate||d.proposedRate)}</span>`:''}</div>
+        <div>${(d.resultUrl && d.resultUrl!==d.profileUrl)?`<a class="btn sm" href="${esc(d.resultUrl)}" target="_blank" rel="noopener">결과물</a>`:'<span class="keyhint">링크 없음</span>'}</div>
+      </div>`).join('')}
+      ${doneList.length>10?`<div class="keyhint">외 ${doneList.length-10}명</div>`:''}
+      <div class="keyhint" style="margin-top:8px">💡 카드 편집창의 '참여율/성과'와 '결과물 링크'를 채우면 여기에 집계됩니다.</div></div>`:''}
   </div>`;
 }
 
@@ -1153,7 +1175,7 @@ function renderCatQuick(){
       recoState.cat = on ? '' : c.key; recoState.shown=8;
       lastSearchCat=recoState.cat||'기타';
       if(recoState.cat) $('#qa_category').value=recoState.cat;
-      renderCatQuick(); renderReco();
+      renderCatQuick(); renderReco(true);
     };
     cq.appendChild(b);
   });
@@ -1215,7 +1237,7 @@ function recoCard(o){ // o: 통합 후보 객체
   };
   return row;
 }
-async function renderReco(){
+async function renderReco(live){
   const box=$('#recoBox'); if(!box) return;
   const info=$('#recoInfo');
   const key=getYtKey();
@@ -1223,8 +1245,8 @@ async function renderReco(){
   const cat=recoState.cat;
   const query = q || (cat? (CAT_QUERY[cat]||cat) : '');
 
-  // 유튜브 실시간 검색 (키 + 검색어/카테고리)
-  if(key && query){
+  // 유튜브 실시간 검색은 '검색' 버튼/Enter/카테고리 선택일 때만 (할당량 절약)
+  if(key && query && live){
     const myToken=++recoState.token;
     box.innerHTML='<div class="keyhint">🟢 유튜브에서 실시간 검색 중…</div>';
     info.textContent='· 실시간 유튜브';
@@ -1259,7 +1281,11 @@ async function renderReco(){
   box.innerHTML='';
   const banner=el('div','keyhint');
   banner.style.cssText='background:rgba(124,92,255,.1);border:1px solid var(--line);border-radius:9px;padding:9px 11px';
-  banner.innerHTML='💡 위에 <b>유튜브 API 키</b>를 연결하면 여기서 <b>실제 채널을 실시간 검색</b>해 등록할 수 있어요. (아래는 검증된 리서치 추천)';
+  if(key && query){
+    banner.innerHTML=`🔎 <b>Enter</b> 또는 <b>검색</b> 버튼을 누르면 '${esc(q||cat)}'을(를) <b>유튜브에서 실시간 검색</b>합니다. (아래는 리서치 추천)`;
+  } else {
+    banner.innerHTML='💡 위에 <b>유튜브 API 키</b>를 연결하면 여기서 <b>실제 채널을 실시간 검색</b>해 등록할 수 있어요. (아래는 검증된 리서치 추천)';
+  }
   box.appendChild(banner);
   if(!pool.length){ box.appendChild(el('div','keyhint','조건에 맞는 추천이 없어요.')); return; }
   pool.slice(0,recoState.shown).forEach(r=>box.appendChild(recoCard({ name:r.name,handle:r.handle,platform:r.platform,category:r.category,tier:r.tier,followers:r.followers,url:r.url,email:r.email,note:r.note })));
@@ -1302,7 +1328,7 @@ function saveYtKey(){
   const k=$('#ytKey').value.trim();
   if(!k){ toast('API 키를 입력해 주세요'); return; }
   try{ localStorage.setItem('yt_api_key',k); }catch(e){}
-  renderYtKeyState(); recoState.shown=12; renderReco();
+  renderYtKeyState(); recoState.shown=12; renderReco(true);
   toast('유튜브 실시간 검색이 연결됐어요');
 }
 function openSearch(){
@@ -1311,7 +1337,7 @@ function openSearch(){
   fillSelect($('#qa_category'),CATEGORIES.map(c=>c.key),'기타');
   $('#qa_input').value=''; $('#qa_name').value=''; delete $('#qa_input').dataset.handle; delete $('#qa_input').dataset.url; qaPreview();
   renderYtKeyState();
-  recoState.shown=12; recoState.token++; renderReco();
+  recoState.shown=12; recoState.token++; renderReco(true);
   $('#searchOverlay').classList.add('show');
   setTimeout(()=>$('#sq').focus(),50);
 }
@@ -1347,11 +1373,14 @@ async function qaAdd(){
   const platform=$('#qa_platform').value;
   if(!name && !handle && !url){ toast('이름 또는 링크를 입력해 주세요'); $('#qa_input').focus(); return; }
   if(!handle && !url){ toast('실제 계정의 @핸들 또는 프로필 링크를 넣어주세요 (존재 확인용)'); $('#qa_input').focus(); return; }
+  if(name && alreadyAdded(name, url)){ toast('이미 목록에 있는 계정이에요'); return; }
   const btn=$('#qaAdd'), old=btn.innerHTML; btn.disabled=true; btn.textContent='실제 계정 확인 중…';
   const v=await verifyAccount(platform, handle, url);
   btn.disabled=false; btn.innerHTML=old;
   if(!v.ok){
-    if(!confirm(`${v.reason}\n\n실제 존재하는 계정만 등록하는 게 원칙이에요.\n확인 없이 그래도 추가할까요?`)) { $('#qa_input').focus(); return; }
+    const msg = v.soft ? `${v.reason}\n\n일시적인 문제일 수 있어요. 그래도 추가할까요?`
+                       : `${v.reason}\n\n실제 존재하는 계정만 등록하는 게 원칙이에요. 그래도 추가할까요?`;
+    if(!confirm(msg)) { $('#qa_input').focus(); return; }
   }
   const rec={ id:genId(), name: v.name||name||handle.replace(/^@/,''), handle: v.handle||handle,
     platform, category:$('#qa_category').value,
@@ -1369,14 +1398,14 @@ function tierFromSubs(n){ n=+n; if(n>=1e6) return '메가'; if(n>=1e5) return '�
 
 /* ---------- 실제 계정 검증 (존재하지 않는 인플루언서 등록 방지) ---------- */
 function getYtKey(){ try{ return localStorage.getItem('yt_api_key')||''; }catch(e){ return ''; } }
-// 프로필 이미지가 실제로 존재하는지로 계정 존재를 판별(unavatar fallback=false → 없으면 404)
-function imgExists(src, timeout=7000){
+// 프로필 이미지 존재 판별 → 'ok'(있음) | 'notfound'(404) | 'timeout'(네트워크 지연)
+function imgProbe(src, timeout=9000){
   return new Promise(res=>{
-    if(!src){ res(false); return; }
+    if(!src){ res('notfound'); return; }
     const img=new Image(); let done=false;
-    const t=setTimeout(()=>{ if(!done){ done=true; res(false); } }, timeout);
-    img.onload=()=>{ if(!done){ done=true; clearTimeout(t); res(img.naturalWidth>1); } };
-    img.onerror=()=>{ if(!done){ done=true; clearTimeout(t); res(false); } };
+    const t=setTimeout(()=>{ if(!done){ done=true; res('timeout'); } }, timeout);
+    img.onload=()=>{ if(!done){ done=true; clearTimeout(t); res(img.naturalWidth>1?'ok':'notfound'); } };
+    img.onerror=()=>{ if(!done){ done=true; clearTimeout(t); res('notfound'); } };
     img.referrerPolicy='no-referrer'; img.src=src;
   });
 }
@@ -1392,29 +1421,36 @@ async function ytResolve(handle, url, key){
     else {
       const q=(handle||'').trim(); if(!q) return null;
       const s=await fetch(`${base}search?part=snippet&type=channel&maxResults=1&regionCode=KR&q=${encodeURIComponent(q)}&key=${encodeURIComponent(key)}`);
-      const sd=await s.json(); const chId=sd.items&&sd.items[0]&&sd.items[0].id&&sd.items[0].id.channelId;
+      const sd=await s.json(); if(sd.error) return {soft:true};
+      const chId=sd.items&&sd.items[0]&&sd.items[0].id&&sd.items[0].id.channelId;
       if(!chId) return null; idParam='id='+chId;
     }
     const r=await fetch(`${base}channels?part=snippet,statistics&${idParam}&key=${encodeURIComponent(key)}`);
-    const d=await r.json(); const c=d.items&&d.items[0]; if(!c) return null;
+    const d=await r.json(); if(d.error) return {soft:true};
+    const c=d.items&&d.items[0]; if(!c) return null;
     const st=c.statistics||{};
-    return { name:c.snippet.title, avatar:(c.snippet.thumbnails&&(c.snippet.thumbnails.default||{}).url)||'',
+    return { ok:true, name:c.snippet.title, avatar:(c.snippet.thumbnails&&(c.snippet.thumbnails.default||{}).url)||'',
       followers: st.hiddenSubscriberCount?'':fmtCount(st.subscriberCount),
       tier: st.hiddenSubscriberCount?'':tierFromSubs(st.subscriberCount),
       url:'https://www.youtube.com/channel/'+c.id, handle:c.snippet.customUrl||('@'+at)||'' };
-  }catch(e){ return null; }
+  }catch(e){ return {soft:true}; }
 }
-// {ok, reason?, name?, avatar?, followers?, tier?, url?, handle?}
+// {ok, soft?, reason?, name?, avatar?, followers?, tier?, url?, handle?}
+// soft=true → 확인 실패가 '없음'이 아니라 '네트워크 지연' 등 불확실한 경우
 async function verifyAccount(platform, handle, url){
   const key=getYtKey();
   if(platform==='YouTube' && key){
     const y=await ytResolve(handle, url, key);
-    if(y) return {ok:true, ...y};
-    return {ok:false, reason:'유튜브에서 해당 채널을 찾지 못했어요.'};
+    if(y && y.ok) return {ok:true, ...y};
+    if(y && y.soft) return {ok:false, soft:true, reason:'유튜브 확인에 실패했어요(할당량 초과 또는 일시 오류).'};
+    return {ok:false, reason:'유튜브에서 해당 채널을 찾지 못했어요. 링크·핸들을 확인해 주세요.'};
   }
   const src=avatarFor(platform, handle, url);
-  if(src && await imgExists(src)) return {ok:true, avatar:src};
-  return {ok:false, reason:'실제 계정을 확인하지 못했어요. 핸들(@아이디)이나 프로필 링크가 정확한지 확인해 주세요.'+(platform==='YouTube'?'\n(유튜브는 검색창 아래 API 키를 넣으면 정확히 확인됩니다.)':'')};
+  if(!src) return {ok:false, reason:'확인할 핸들·링크가 없어요.'};
+  const r=await imgProbe(src);
+  if(r==='ok') return {ok:true, avatar:src};
+  if(r==='timeout') return {ok:false, soft:true, reason:'네트워크가 느려 계정 확인을 마치지 못했어요.'};
+  return {ok:false, reason:'실제 계정을 확인하지 못했어요. 핸들(@아이디)이나 프로필 링크가 정확한지 확인해 주세요.'+(platform==='YouTube'?'\n(유튜브는 검색창 위 API 키를 연결하면 정확히 확인됩니다.)':'')};
 }
 let ytState={q:'',pageToken:'',items:[],seen:new Set()};
 let lastSearchCat='기타';
@@ -1489,6 +1525,9 @@ function renderYt(){
 function init(){
   initTheme();
   $('#btnTheme').onclick=toggleTheme;
+  // 네트워크 복구 시 실시간 재연결
+  window.addEventListener('online', ()=>{ if(sbConfig && !sbLive) sbConnect(sbConfig, true); });
+  window.addEventListener('offline', ()=>{ sbLive=false; setTeamLabel(); });
   initFilters(); loadTpl(); load(); render();
   // 저장된 팀 연결(없으면 기본 내장 설정)로 자동 연결
   const optedOut = localStorage.getItem('sb_disabled')==='1';
@@ -1509,7 +1548,7 @@ function init(){
     navigator.clipboard&&navigator.clipboard.writeText(SB_SETUP_SQL); toast('SQL을 복사했어요'); };
   $('#btnSearch').onclick=openSearch;
   $('#searchClose').onclick=closeSearch;
-  $('#ytSearchBtn').onclick=()=>{ recoState.token++; recoState.shown=12; renderReco(); };
+  $('#ytSearchBtn').onclick=()=>{ recoState.token++; recoState.shown=12; renderReco(true); };
   $('#ytKeySave').onclick=saveYtKey;
   $('#ytKey').addEventListener('keydown',e=>{ if(e.key==='Enter') saveYtKey(); });
   $('#qa_input').addEventListener('input',qaDetect);
@@ -1520,16 +1559,13 @@ function init(){
   $('#qaAdd').onclick=qaAdd;
   $('#searchOverlay').onclick=e=>{ if(e.target===$('#searchOverlay')) closeSearch(); };
   let sqTimer=null;
-  $('#sq').addEventListener('input',()=>{ recoState.shown=12; clearTimeout(sqTimer); sqTimer=setTimeout(renderReco, 450); });
-  $('#sq').addEventListener('keydown',e=>{ if(e.key==='Enter'){ clearTimeout(sqTimer); recoState.token++; recoState.shown=12; renderReco(); } });
+  $('#sq').addEventListener('input',()=>{ recoState.shown=12; clearTimeout(sqTimer); sqTimer=setTimeout(()=>renderReco(false), 300); });
+  $('#sq').addEventListener('keydown',e=>{ if(e.key==='Enter'){ clearTimeout(sqTimer); recoState.token++; recoState.shown=12; renderReco(true); } });
   $('#btnCancel').onclick=closeModal;
   $('#btnVerify').onclick=()=>verifyFromModal(false);
   $('#btnSave').onclick=saveModal;
   $('#btnDelete').onclick=deleteRec;
   $('#overlay').onclick=e=>{ if(e.target===$('#overlay')) closeModal(); };
-  $('#btnExport').onclick=exportJSON;
-  $('#btnImport').onclick=()=>$('#fileInput').click();
-  $('#fileInput').onchange=e=>{ if(e.target.files[0]) importJSON(e.target.files[0]); e.target.value=''; };
   $('#search').oninput=e=>{ filter.q=e.target.value; render(); };
   $('#fTier').onchange=e=>{ filter.tier=e.target.value; render(); };
   $('#fPlatform').onchange=e=>{ filter.platform=e.target.value; render(); };
