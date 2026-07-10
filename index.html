@@ -164,6 +164,38 @@
   .plat{font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px}
   .plat.ig{background:rgba(255,107,166,.15);color:#ff6ba6}
   .plat.yt{background:rgba(239,68,68,.15);color:#f87171}
+  /* 활동 로그 */
+  .log-list{max-height:190px;overflow-y:auto;display:flex;flex-direction:column;gap:7px;margin-bottom:8px}
+  .log-item{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12.5px}
+  .log-item.sys{background:transparent;border-style:dashed;color:var(--muted)}
+  .log-item .log-meta{font-size:11px;color:var(--faint);margin-top:3px}
+  .log-item .log-txt{color:var(--txt);word-break:break-word}
+  .log-item.sys .log-txt{color:var(--muted)}
+  /* 우선순위 별 */
+  .star{position:absolute;top:6px;right:9px;font-size:15px;line-height:1;cursor:pointer;
+    color:var(--faint);z-index:4;background:none;border:none;padding:2px}
+  .star:hover{color:#fbbf24}
+  .star.on{color:#fbbf24}
+  .card.pri{border-color:#fbbf24}
+  .card.pri::before{content:"";position:absolute;inset:0;border-radius:12px;pointer-events:none;
+    box-shadow:inset 0 0 0 1px rgba(251,191,36,.4)}
+  .card .cmtcount{color:var(--brand2);font-size:11px;font-weight:600}
+  /* 삭제(✕) 버튼은 호버 시 별 왼쪽에 표시 */
+  .card:hover .rmx{right:34px}
+  /* 선택 체크박스 */
+  .card .selbox{position:absolute;top:7px;left:9px;z-index:5;display:none}
+  .card .rowsel{width:17px;height:17px;cursor:pointer;accent-color:var(--brand)}
+  body.selmode .card .selbox{display:block}
+  body.selmode .card{cursor:pointer}
+  body.selmode .card .ctop{padding-left:24px}
+  .card.sel{outline:2px solid var(--brand);outline-offset:-2px}
+  /* 일괄 작업 바 */
+  #bulkBar{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:60;
+    display:none;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+    box-shadow:var(--shadow);border-radius:14px;padding:10px 14px;max-width:94vw;flex-wrap:wrap}
+  #bulkBar.show{display:flex}
+  #bulkBar #bulkCount{font-weight:700;font-size:13px}
+  #bulkBar .f{padding:7px 10px;font-size:12.5px}
   .card-stage{margin-top:9px;display:none}
   .card-stage .stagesel{width:100%;padding:6px 8px;border-radius:8px;font-size:12px;font-weight:600;
     background:var(--panel);border:1px solid var(--line);color:var(--txt);cursor:pointer}
@@ -319,7 +351,11 @@
   <select class="f" id="fPlatform"><option value="">모든 플랫폼</option><option>Instagram</option><option>YouTube</option></select>
   <select class="f" id="fStatus"><option value="">모든 단계</option></select>
   <select class="f" id="fAssignee"><option value="">모든 담당자</option></select>
+  <select class="f" id="fCampaign"><option value="">모든 캠페인</option></select>
+  <button class="btn sm" id="fPriority" title="중요 인플루언서만 보기">⭐ 중요만</button>
   <div class="spacer"></div>
+  <button class="btn sm" id="btnSelectMode" title="여러 명 선택해 일괄 변경">☑ 선택</button>
+  <button class="btn sm ico" id="btnExport" title="현재 목록을 엑셀(CSV)로 내보내기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/></svg></button>
   <div class="toggle">
     <button id="viewBoard" class="on">📋 섭외 보드</button>
     <button id="viewTable">표</button>
@@ -332,6 +368,18 @@
   <div id="tableView" class="hidden"></div>
   <div id="statsView" class="hidden"></div>
 </main>
+
+<!-- 일괄 작업 바 -->
+<div id="bulkBar">
+  <span id="bulkCount">0명 선택</span>
+  <div class="spacer"></div>
+  <select class="f" id="bulkStatus"><option value="">단계 변경…</option></select>
+  <input class="f" id="bulkAssignee" list="assigneeList" placeholder="담당자 지정…" style="width:130px">
+  <input class="f" id="bulkCampaign" list="campaignList" placeholder="캠페인 지정…" style="width:150px">
+  <button class="btn sm" id="bulkStar">⭐ 중요</button>
+  <button class="btn sm" id="bulkDelete" style="color:var(--c-reject)">🗑 삭제</button>
+  <button class="btn sm" id="bulkClear">선택 해제</button>
+</div>
 
 <!-- Edit modal -->
 <div class="overlay" id="overlay">
@@ -366,6 +414,12 @@
         <div class="field"><label>담당자</label><input id="f_assignee" list="assigneeList" placeholder="팀원 이름"><datalist id="assigneeList"></datalist></div>
         <div class="field"><label>다음 연락일 (팔로업)</label><input id="f_followup" type="date"></div>
       </div>
+      <div class="grid2">
+        <div class="field"><label>캠페인 / 프로젝트</label><input id="f_campaign" list="campaignList" placeholder="예: 3월 신제품 런칭"><datalist id="campaignList"></datalist></div>
+        <div class="field"><label>우선순위</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:9px 0;cursor:pointer"><input type="checkbox" id="f_priority" style="width:auto"> <span>⭐ 중요 인플루언서로 표시</span></label>
+        </div>
+      </div>
       <div class="qa-row">
         <select id="f_tpl" class="f" style="flex:1"><option value="">✉️ 메시지 템플릿 선택…</option></select>
         <button class="btn" id="btnCopyTpl">📋 메시지 복사</button>
@@ -387,6 +441,13 @@
         <div class="field"><label>결과물 링크</label><input id="f_resultUrl" placeholder="게시물 URL"></div>
       </div>
       <div class="field"><label>메모</label><textarea id="f_memo" placeholder="협상 내용, 담당자, 특이사항…"></textarea></div>
+
+      <div class="section-t">💬 활동 로그 · 코멘트</div>
+      <div id="logList" class="log-list"></div>
+      <div class="qa-row" id="logInputRow">
+        <input id="logInput" style="flex:1;padding:9px 11px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);font-size:13.5px" placeholder="예: DM 보냄 / 답장 옴, 단가 협의중…">
+        <button class="btn primary" id="logAdd">기록</button>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn del hidden" id="btnDelete">🗑 삭제</button>
@@ -586,9 +647,11 @@ const RECO_DATA = /*__RECO__*/[{"name":"PONY (포니)","handle":"@ponysmakeup","
 /* ---------- State + storage ---------- */
 const LS_KEY = 'viral_outreach_v2';
 let data = [];
-let filter = {cat:'', q:'', tier:'', platform:'', status:'', assignee:'', followup:false};
+let filter = {cat:'', q:'', tier:'', platform:'', status:'', assignee:'', followup:false, campaign:'', priority:false};
 let view = 'board';
 let editingId = null;
+let selectMode = false;
+let selected = new Set();
 
 function load(){
   let stored=null;
@@ -929,10 +992,12 @@ function matches(d){
   if(filter.platform && d.platform!==filter.platform) return false;
   if(filter.status && d.status!==filter.status) return false;
   if(filter.assignee && (d.assignee||'')!==filter.assignee) return false;
+  if(filter.campaign && (d.campaign||'')!==filter.campaign) return false;
+  if(filter.priority && !d.priority) return false;
   if(filter.followup){ const st=followState(d); if(st!=='over' && st!=='today') return false; }
   if(filter.q){
     const q=filter.q.toLowerCase();
-    const hay=[d.name,d.handle,d.memo,d.category,d.email,d.assignee].join(' ').toLowerCase();
+    const hay=[d.name,d.handle,d.memo,d.category,d.email,d.assignee,d.campaign].join(' ').toLowerCase();
     if(!hay.includes(q)) return false;
   }
   return true;
@@ -998,11 +1063,16 @@ function renderChips(){
 /* ---------- Card ---------- */
 function cardEl(d){
   const c=el('div','card'); c.draggable=true; c.dataset.id=d.id;
+  if(d.priority) c.classList.add('pri');
+  if(selectMode && selected.has(d.id)) c.classList.add('sel');
   const plat = d.platform==='YouTube' ? '<span class="plat yt">YT</span>' :
                d.platform==='Instagram' ? '<span class="plat ig">IG</span>' :
                `<span class="plat" style="background:var(--panel);color:var(--muted)">${esc((d.platform||'').slice(0,2))}</span>`;
   const rate = d.agreedRate||d.proposedRate;
+  const cmtN = (d.comments&&d.comments.length)||0;
   c.innerHTML=`
+    <div class="selbox"><input type="checkbox" class="rowsel"${selected.has(d.id)?' checked':''}></div>
+    <button class="star${d.priority?' on':''}" title="중요 표시">${d.priority?'★':'☆'}</button>
     <div class="ctop">
       <div class="avatar" style="background:${catColor(d.category)}">${esc(initials(d.name))}${avatarImgTag(avatarSrc(d))}</div>
       <div style="min-width:0">
@@ -1014,6 +1084,7 @@ function cardEl(d){
       <span class="tag cat" style="background:${catColor(d.category)}">${esc(d.category||'기타')}</span>
       <span class="tag">${esc(d.tier||'')}</span>
       ${d.followers?`<span class="tag">👥 ${esc(d.followers)}</span>`:''}
+      ${d.campaign?`<span class="tag" style="background:var(--panel);color:var(--brand2)">🏷 ${esc(d.campaign)}</span>`:''}
       ${followBadge(d)}
     </div>
     <div class="foot">
@@ -1021,6 +1092,7 @@ function cardEl(d){
       ${rate?`<span class="rate">💰 ${esc(rate)}</span>`:''}
       ${d.assignee?`<span style="color:var(--brand2);font-weight:700">👤 ${esc(d.assignee)}</span>`:''}
       ${d.contactMethod?`<span>· ${esc(d.contactMethod)}</span>`:''}
+      ${cmtN?`<span class="cmtcount">💬 ${cmtN}</span>`:''}
     </div>
     <div class="card-stage">
       <select class="stagesel">${STATUSES.map(s=>`<option${s.key===d.status?' selected':''}>${s.key}</option>`).join('')}</select>
@@ -1028,18 +1100,124 @@ function cardEl(d){
   const rm=el('button','rmx','✕'); rm.title='목록에서 삭제';
   rm.addEventListener('click',e=>{ e.stopPropagation(); removeFromList(d.id); });
   c.appendChild(rm);
+  // 별(중요) 토글
+  const star=c.querySelector('.star');
+  star.addEventListener('click',e=>{ e.stopPropagation(); togglePriority(d.id); });
+  // 선택 체크박스
+  const chk=c.querySelector('.rowsel');
+  chk.addEventListener('click',e=>{ e.stopPropagation(); toggleSelect(d.id); });
   // 단계 드롭다운 — 터치(모바일)에서도 단계 변경 가능
   const sel=c.querySelector('.stagesel');
   sel.addEventListener('click',e=>e.stopPropagation());
   sel.addEventListener('change',e=>{ e.stopPropagation(); setStatus(d.id, sel.value); });
-  c.addEventListener('click',()=>openEdit(d.id));
+  c.addEventListener('click',()=>{ if(selectMode){ toggleSelect(d.id); } else { openEdit(d.id); } });
   c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',d.id);c.style.opacity=.4;});
   c.addEventListener('dragend',()=>{c.style.opacity=1;});
   return c;
 }
 function setStatus(id, status){
   const d=data.find(x=>x.id===id); if(!d || d.status===status) return;
-  d.status=status; d.updatedBy=currentUserName(); d.updatedAt=Date.now(); save(); sbUpsert(d); render(); toast(`${d.name} → ${status}`);
+  const prev=d.status;
+  d.status=status; d.updatedBy=currentUserName(); d.updatedAt=Date.now();
+  addLog(d, `단계 변경: ${prev} → ${status}`, true);
+  save(); sbUpsert(d); render(); toast(`${d.name} → ${status}`);
+}
+
+/* ---------- 활동 로그 / 코멘트 ---------- */
+function addLog(d, text, sys){
+  if(!d.comments) d.comments=[];
+  d.comments.push({ts:Date.now(), by:currentUserName(), text, sys:!!sys});
+}
+function renderLog(){
+  const box=$('#logList'); if(!box) return;
+  const d = editingId ? data.find(x=>x.id===editingId) : null;
+  const list = (d&&d.comments)||[];
+  if(!editingId){ box.innerHTML=`<div class="keyhint">저장 후 활동 로그를 남길 수 있어요.</div>`; return; }
+  if(!list.length){ box.innerHTML=`<div class="keyhint">아직 기록이 없어요. 연락·답장·협의 내용을 남겨 보세요.</div>`; return; }
+  box.innerHTML=list.slice().reverse().map(l=>`
+    <div class="log-item${l.sys?' sys':''}">
+      <div class="log-txt">${l.sys?'⚙ ':''}${esc(l.text)}</div>
+      <div class="log-meta">${esc(l.by||'')} · ${relTime(l.ts)}</div>
+    </div>`).join('');
+}
+function addComment(){
+  if(!editingId){ toast('먼저 저장한 카드에만 기록할 수 있어요'); return; }
+  const inp=$('#logInput'); const t=inp.value.trim(); if(!t) return;
+  const d=data.find(x=>x.id===editingId); if(!d){ toast('카드를 찾을 수 없어요'); return; }
+  addLog(d, t, false);
+  d.updatedBy=currentUserName(); d.updatedAt=Date.now();
+  inp.value=''; save(); sbUpsert(d); renderLog(); render();
+}
+
+/* ---------- 우선순위(중요) ---------- */
+function togglePriority(id){
+  const d=data.find(x=>x.id===id); if(!d) return;
+  d.priority=!d.priority; d.updatedBy=currentUserName(); d.updatedAt=Date.now();
+  save(); sbUpsert(d); render(); toast(d.priority?`⭐ ${d.name} 중요 표시`:`${d.name} 중요 해제`);
+}
+
+/* ---------- 선택 모드 / 일괄 작업 ---------- */
+function setSelectMode(on){
+  selectMode=on; selected.clear();
+  document.body.classList.toggle('selmode', on);
+  $('#btnSelectMode').classList.toggle('primary', on);
+  $('#btnSelectMode').innerHTML = on ? '✕ 선택 종료' : '☑ 선택';
+  updateBulkBar(); render();
+}
+function toggleSelect(id){
+  if(!selectMode) setSelectMode(true);
+  if(selected.has(id)) selected.delete(id); else selected.add(id);
+  updateBulkBar(); render();
+}
+function updateBulkBar(){
+  const bar=$('#bulkBar');
+  $('#bulkCount').textContent=`${selected.size}명 선택`;
+  bar.classList.toggle('show', selectMode && selected.size>0);
+}
+function bulkForEach(fn){
+  let n=0;
+  selected.forEach(id=>{ const d=data.find(x=>x.id===id); if(d){ fn(d); d.updatedBy=currentUserName(); d.updatedAt=Date.now(); sbUpsert(d); n++; } });
+  save(); render(); return n;
+}
+function bulkSetStatus(status){
+  if(!status) return;
+  const n=bulkForEach(d=>{ if(d.status!==status){ addLog(d,`단계 변경: ${d.status} → ${status}`,true); d.status=status; } });
+  toast(`${n}명 → ${status}`); $('#bulkStatus').value='';
+}
+function bulkSetAssignee(){
+  const v=$('#bulkAssignee').value.trim(); if(!v) return;
+  const n=bulkForEach(d=>{ d.assignee=v; }); toast(`${n}명 담당자 → ${v}`); $('#bulkAssignee').value='';
+}
+function bulkSetCampaign(){
+  const v=$('#bulkCampaign').value.trim(); if(!v) return;
+  const n=bulkForEach(d=>{ d.campaign=v; }); toast(`${n}명 캠페인 → ${v}`); $('#bulkCampaign').value='';
+}
+function bulkStar(){
+  const n=bulkForEach(d=>{ d.priority=true; }); toast(`${n}명 ⭐ 중요 표시`);
+}
+function bulkDelete(){
+  if(!selected.size) return;
+  if(!confirm(`선택한 ${selected.size}명을 목록에서 삭제할까요?`)) return;
+  const ids=[...selected]; ids.forEach(id=>sbDelete(id));
+  data=data.filter(x=>!selected.has(x.id));
+  const n=selected.size; selected.clear(); save(); updateBulkBar(); render(); toast(`${n}명 삭제`);
+}
+
+/* ---------- CSV 내보내기 ---------- */
+function csvCell(v){ v=(v==null?'':String(v)); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function exportCSV(){
+  const list=data.filter(matches);
+  if(!list.length){ toast('내보낼 목록이 없어요'); return; }
+  const cols=[['name','이름'],['handle','핸들'],['platform','플랫폼'],['category','카테고리'],['tier','규모'],['followers','팔로워'],['status','단계'],['campaign','캠페인'],['priority','중요'],['assignee','담당자'],['followup','팔로업'],['email','이메일'],['contactMethod','연락방법'],['proposedRate','제안단가'],['agreedRate','협의단가'],['contentType','콘텐츠'],['schedule','일정'],['engagement','성과'],['profileUrl','프로필URL'],['resultUrl','결과물URL'],['memo','메모']];
+  let csv=cols.map(c=>c[1]).join(',')+'\n';
+  list.forEach(d=>{ csv+=cols.map(([k])=> k==='priority' ? (d.priority?'중요':'') : csvCell(d[k])).join(',')+'\n'; });
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const dt=new Date(); const pad=n=>String(n).padStart(2,'0');
+  const fn=`섭외목록_${dt.getFullYear()}${pad(dt.getMonth()+1)}${pad(dt.getDate())}.csv`;
+  const a=document.createElement('a'); a.href=url; a.download=fn; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast(`${list.length}명 CSV로 내보냈어요`);
 }
 
 /* ---------- Board ---------- */
@@ -1133,10 +1311,14 @@ function openEdit(id, prefill){
   const set=(k,v)=>$('#f_'+k).value = d[k]!=null?d[k]:(v||'');
   set('name');set('handle');set('followers');set('profileUrl');set('email');
   set('proposedRate');set('agreedRate');set('contentType');set('schedule');
-  set('engagement');set('resultUrl');set('memo');set('assignee');set('followup');
+  set('engagement');set('resultUrl');set('memo');set('assignee');set('followup');set('campaign');
+  $('#f_priority').checked = !!d.priority;
   if(!id && !$('#f_assignee').value) $('#f_assignee').value=currentUserName();
   // 담당자 자동완성(기존 담당자 목록)
   $('#assigneeList').innerHTML=[...new Set(data.map(x=>x.assignee).filter(Boolean))].map(a=>`<option value="${esc(a)}">`).join('');
+  // 캠페인 자동완성
+  $('#campaignList').innerHTML=[...new Set(data.map(x=>x.campaign).filter(Boolean))].map(a=>`<option value="${esc(a)}">`).join('');
+  renderLog();
   // 템플릿 선택 목록
   $('#f_tpl').innerHTML='<option value="">✉️ 메시지 템플릿 선택…</option>'+templates.map((t,i)=>`<option value="${i}">${esc(t.name)}</option>`).join('');
   fillSelect($('#f_platform'),['Instagram','YouTube','틱톡','블로그'],d.platform||'Instagram');
@@ -1187,7 +1369,8 @@ async function saveModal(){
     contactMethod:g('contactMethod'),status:g('status'),proposedRate:g('proposedRate'),
     agreedRate:g('agreedRate'),contentType:g('contentType'),schedule:g('schedule'),
     engagement:g('engagement'),resultUrl:g('resultUrl'),memo:g('memo'),
-    assignee:g('assignee'),followup:g('followup'),updatedBy:currentUserName(), updatedAt:Date.now()
+    assignee:g('assignee'),followup:g('followup'),campaign:g('campaign'),
+    priority:$('#f_priority').checked, updatedBy:currentUserName(), updatedAt:Date.now()
   };
   if(modalVerifiedAvatar) rec.avatar=modalVerifiedAvatar;
   let saved;
@@ -1223,6 +1406,15 @@ function renderAssigneeFilter(){
   const sel=$('#fAssignee');
   const names=[...new Set(data.map(x=>x.assignee).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
   sel.innerHTML='<option value="">모든 담당자</option>'+names.map(n=>`<option${n===filter.assignee?' selected':''}>${esc(n)}</option>`).join('');
+  sel.style.display=names.length?'':'none';
+}
+
+/* ---------- 캠페인 필터 옵션 ---------- */
+function renderCampaignFilter(){
+  const sel=$('#fCampaign');
+  const names=[...new Set(data.map(x=>x.campaign).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
+  if(filter.campaign && !names.includes(filter.campaign)) filter.campaign='';
+  sel.innerHTML='<option value="">모든 캠페인</option>'+names.map(n=>`<option${n===filter.campaign?' selected':''}>${esc(n)}</option>`).join('');
   sel.style.display=names.length?'':'none';
 }
 
@@ -1263,6 +1455,10 @@ function renderStatsView(){
   const pMax=Math.max(...pfs.map(p=>p[1]),1);
   const tiers=['나노','마이크로','미드','메가'].map(t=>[t,data.filter(d=>d.tier===t).length]);
   const tMax=Math.max(...tiers.map(t=>t[1]),1);
+  // 캠페인 분포
+  const cpCnt={}; data.forEach(d=>{ if(d.campaign){ cpCnt[d.campaign]=(cpCnt[d.campaign]||0)+1; } });
+  const camps=Object.entries(cpCnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const cpMax=Math.max(...camps.map(c=>c[1]),1);
   // 예산
   const sumProposed=data.reduce((s,d)=>s+parseKRW(d.proposedRate),0);
   const sumAgreed=data.reduce((s,d)=>s+parseKRW(d.agreedRate),0);
@@ -1288,6 +1484,8 @@ function renderStatsView(){
       ${pfs.map(([k,n])=>barRow(k,n,n+'명',pMax,'var(--brand2)',false)).join('')}</div>
     <div class="panel"><h3>규모(팔로워 티어)</h3>
       ${tiers.map(([k,n])=>barRow(k,n,n+'명',tMax,'var(--brand)',false)).join('')}</div>
+    ${camps.length?`<div class="panel"><h3>🏷 캠페인별 <span class="sub">상위 ${camps.length}개</span></h3>
+      ${camps.map(([k,n])=>barRow(k,n,n+'명',cpMax,'var(--brand2)',false)).join('')}</div>`:''}
     ${dueList.length?`<div class="panel"><h3>⏰ 팔로업 필요 <span class="sub">${dueList.length}명</span></h3>
       ${dueList.slice(0,8).map(d=>`<div class="bar-row" style="grid-template-columns:1fr auto"><div class="bl">${esc(d.name)} <span style="color:var(--faint)">· ${esc(d.assignee||'담당자 미정')}</span></div><div>${followBadge(d)}</div></div>`).join('')}
       ${dueList.length>8?`<div class="keyhint">외 ${dueList.length-8}명 — 상단 '팔로업 필요' 타일을 눌러 확인</div>`:''}</div>`:''}
@@ -1305,7 +1503,8 @@ function renderStatsView(){
 /* ---------- Master render ---------- */
 function render(){
   const sy=window.scrollY;
-  renderStats(); renderChips(); renderAssigneeFilter();
+  renderStats(); renderChips(); renderAssigneeFilter(); renderCampaignFilter();
+  $('#fPriority').classList.toggle('primary', filter.priority);
   const show=(id,on)=>$(id).classList.toggle('hidden',!on);
   show('#boardView', view==='board');
   show('#tableView', view==='table');
@@ -1783,7 +1982,26 @@ function init(){
     if(confirm(`"${templates[tplIdx].name}" 템플릿을 삭제할까요?`)){ templates.splice(tplIdx,1); tplIdx=0; saveTpl(); renderTplModal(); toast('삭제했어요'); } };
   $('#btnCopyTpl').onclick=copyTplForCurrent;
   $('#fAssignee').onchange=e=>{ filter.assignee=e.target.value; render(); };
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); closeSearch(); closeTpl(); $('#teamOverlay').classList.remove('show'); } });
+  // 캠페인 / 우선순위 필터
+  $('#fCampaign').onchange=e=>{ filter.campaign=e.target.value; render(); };
+  $('#fPriority').onclick=()=>{ filter.priority=!filter.priority; render(); };
+  // 활동 로그 코멘트
+  $('#logAdd').onclick=addComment;
+  $('#logInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addComment(); });
+  // 선택 모드 / CSV
+  $('#btnSelectMode').onclick=()=>setSelectMode(!selectMode);
+  $('#btnExport').onclick=exportCSV;
+  // 일괄 작업 바
+  $('#bulkStatus').innerHTML='<option value="">단계 변경…</option>'+STATUSES.map(s=>`<option>${s.key}</option>`).join('');
+  $('#bulkStatus').onchange=e=>bulkSetStatus(e.target.value);
+  $('#bulkAssignee').addEventListener('keydown',e=>{ if(e.key==='Enter') bulkSetAssignee(); });
+  $('#bulkAssignee').addEventListener('change',bulkSetAssignee);
+  $('#bulkCampaign').addEventListener('keydown',e=>{ if(e.key==='Enter') bulkSetCampaign(); });
+  $('#bulkCampaign').addEventListener('change',bulkSetCampaign);
+  $('#bulkStar').onclick=bulkStar;
+  $('#bulkDelete').onclick=bulkDelete;
+  $('#bulkClear').onclick=()=>setSelectMode(false);
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); closeSearch(); closeTpl(); $('#teamOverlay').classList.remove('show'); if(selectMode) setSelectMode(false); } });
 }
 init();
 </script>
